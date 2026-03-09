@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    /* Using hsl() wrapper so the variable is a valid color value */
+    --bg-primary: hsl(0 0% 100%);
+    --bg-secondary: hsl(0 0% 96%);
+    --text-primary: hsl(0 0% 15%);
+    --text-secondary: hsl(0 0% 45%);
+    --color-primary-base: hsl(346 100% 58%);
+    --border-base: hsl(0 0% 92%);
+    --destructive-base: hsl(0 84% 60%);
+  }
+
+  /* When dark class is present on html/root */
+  :root.dark {
+    --bg-primary: hsl(0 0% 10%);
+    --bg-secondary: hsl(0 0% 15%);
+    --text-primary: hsl(0 0% 98%);
+    --text-secondary: hsl(0 0% 70%);
+    --color-primary-base: hsl(346 100% 58%);
+    --border-base: hsl(0 0% 20%);
+    --destructive-base: hsl(0 60% 50%);
+    color-scheme: dark;
+  }
+}
+
+@theme {
+  /* Map theme tokens to the CSS variables defined above */
+  --color-background: var(--bg-primary);
+  --color-foreground: var(--text-primary);
+
+  --color-card: var(--bg-primary);
+  --color-card-foreground: var(--text-primary);
+
+  --color-popover: var(--bg-primary);
+  --color-popover-foreground: var(--text-primary);
+
+  --color-primary: var(--color-primary-base);
+  --color-primary-foreground: hsl(0 0% 100%);
+
+  --color-secondary: var(--bg-secondary);
+  --color-secondary-foreground: var(--text-primary);
+
+  --color-muted: var(--bg-secondary);
+  --color-muted-foreground: var(--text-secondary);
+
+  --color-accent: var(--bg-secondary);
+  --color-accent-foreground: var(--text-primary);
+
+  --color-destructive: var(--destructive-base);
+  --color-destructive-foreground: hsl(0 0% 98%);
+
+  --color-border: var(--border-base);
+  --color-input: var(--border-base);
+  --color-ring: var(--color-primary-base);
+
+  --radius: 0.75rem;
+}
+
+@layer utilities {
+  .shadow-soft {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  }
+}
+
+body {
+  @apply bg-background text-foreground antialiased;
+  font-feature-settings: "rlig" 1, "calt" 1;
+}
