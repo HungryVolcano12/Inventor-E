@@ -137,7 +137,7 @@ export default function Inventory() {
                     <motion.div
                         layout
                         className={viewMode === 'grid'
-                            ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-6"
+                            ? "grid grid-cols-[repeat(auto-fill,minmax(135px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4 sm:gap-6"
                             : "flex flex-col gap-4"
                         }
                     >

@@ -3,10 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, Upload, Image as ImageIcon } from 'lucide-react';
 import { useInventoryStore } from '../store/useInventoryStore';
 import { useSettingsStore } from '../store/useSettingsStore';
+import { useSubscriptionStore } from '../store/useSubscriptionStore';
 import { translations } from '../utils/translations';
 
 export default function AddItemSheet({ isOpen, onClose }) {
     const { addItem, items, customCategories, addCategory } = useInventoryStore();
+    const { currentTier, openPaywall } = useSubscriptionStore();
     const { language } = useSettingsStore();
     const t = translations[language];
     const fileInputRef = useRef(null);
@@ -76,6 +78,13 @@ export default function AddItemSheet({ isOpen, onClose }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
+
+        // Freemium limit check
+        if (items.length >= 50 && currentTier === 'free') {
+            onClose(); // Close the add sheet
+            openPaywall('item_limit_reached'); // Show paywall
+            return; // Prevent saving
+        }
 
         try {
             let finalCategory = formData.category;

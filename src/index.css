@@ -7,7 +7,9 @@
     --bg-secondary: hsl(0 0% 96%);
     --text-primary: hsl(0 0% 15%);
     --text-secondary: hsl(0 0% 45%);
-    --color-primary-base: hsl(346 100% 58%);
+    --primary: 346 100% 58%;
+    /* Default Pink HSL variables */
+    --color-primary-base: hsl(var(--primary));
     --border-base: hsl(0 0% 92%);
     --destructive-base: hsl(0 84% 60%);
   }
@@ -18,7 +20,7 @@
     --bg-secondary: hsl(0 0% 15%);
     --text-primary: hsl(0 0% 98%);
     --text-secondary: hsl(0 0% 70%);
-    --color-primary-base: hsl(346 100% 58%);
+    --color-primary-base: hsl(var(--primary));
     --border-base: hsl(0 0% 20%);
     --destructive-base: hsl(0 60% 50%);
     color-scheme: dark;

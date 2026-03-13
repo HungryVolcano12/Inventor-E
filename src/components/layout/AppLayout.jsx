@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import BottomNav from './BottomNav';
 import AddItemSheet from '../AddItemSheet';
+import SubscriptionModal from '../SubscriptionModal';
 import { useUIStore } from '../../store/useUIStore';
 
 export default function AppLayout() {
@@ -14,6 +15,7 @@ export default function AppLayout() {
                 </main>
                 <BottomNav />
                 <AddItemSheet isOpen={isAddSheetOpen} onClose={closeAddSheet} />
+                <SubscriptionModal />
             </div>
         </div>
     );

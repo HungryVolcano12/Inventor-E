@@ -6,7 +6,7 @@ import { TrendingUp, Package, AlertTriangle, DollarSign, Pencil } from 'lucide-r
 import { motion } from 'framer-motion';
 import { formatCurrency } from '../utils/currency';
 
-function StatCard({ icon: Icon, label, value, color, delay, onClick, isClickable = false }) {
+function StatCard({ icon: Icon, label, value, color, delay, onClick, isClickable = false, onSwipeLeft, onSwipeRight, showIndicators = false, activeIndex = 0 }) {
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -14,13 +14,39 @@ function StatCard({ icon: Icon, label, value, color, delay, onClick, isClickable
             transition={{ delay }}
             whileTap={isClickable ? { scale: 0.95 } : {}}
             onClick={onClick}
-            className={`p-5 rounded-2xl bg-card shadow-sm border border-border ${isClickable ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
+            drag={onSwipeLeft || onSwipeRight ? "x" : false}
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.2}
+            onDragEnd={(e, { offset, velocity }) => {
+                const swipe = offset.x;
+                if (swipe < -40 && onSwipeLeft) {
+                    onSwipeLeft();
+                } else if (swipe > 40 && onSwipeRight) {
+                    onSwipeRight();
+                }
+            }}
+            className={`relative p-5 rounded-2xl bg-card shadow-sm border border-border overflow-hidden ${isClickable || onSwipeLeft || onSwipeRight ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
         >
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-3 ${color}`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-3 transition-colors ${color}`}>
                 <Icon size={20} className="text-white" />
             </div>
+            {showIndicators && (
+                <div className="absolute top-5 right-5 flex gap-1.5">
+                    <div className={`w-1.5 h-1.5 rounded-full transition-colors ${activeIndex === 0 ? 'bg-foreground/50' : 'bg-muted-foreground/20'}`} />
+                    <div className={`w-1.5 h-1.5 rounded-full transition-colors ${activeIndex === 1 ? 'bg-foreground/50' : 'bg-muted-foreground/20'}`} />
+                </div>
+            )}
             <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">{label}</p>
-            <h3 className="text-2xl font-bold mt-1 text-foreground">{value}</h3>
+            <h3 className="text-2xl font-bold mt-1 text-foreground">
+                <motion.span
+                    key={value}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="inline-block"
+                >
+                    {value}
+                </motion.span>
+            </h3>
         </motion.div>
     );
 }
@@ -78,12 +104,16 @@ export default function Dashboard() {
                 />
                 <StatCard
                     icon={AlertTriangle}
-                    label={showNoStock ? (t.noStock || 'No Stock') : t.lowStock}
+                    label={showNoStock ? (t.noStock || 'Stok Habis') : t.lowStock}
                     value={showNoStock ? stats.noStock : stats.lowStock}
                     color={showNoStock ? "bg-red-600" : "bg-orange-500"}
                     delay={0.3}
                     isClickable={true}
                     onClick={() => setShowNoStock(!showNoStock)}
+                    onSwipeLeft={() => setShowNoStock(true)}
+                    onSwipeRight={() => setShowNoStock(false)}
+                    showIndicators={true}
+                    activeIndex={showNoStock ? 1 : 0}
                 />
             </div>
 
@@ -95,10 +125,10 @@ export default function Dashboard() {
                             recentActivity.slice(0, 5).map((activity) => (
                                 <div key={activity.id} className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border">
                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${activity.type === 'ADD' ? 'bg-blue-100 text-blue-600' :
-                                            activity.type === 'SALE' ? 'bg-green-100 text-green-600' :
-                                                activity.type === 'DELETE' ? 'bg-red-100 text-red-600' :
-                                                    activity.type === 'UPDATE' ? 'bg-yellow-100 text-yellow-600' :
-                                                        'bg-gray-100 text-gray-600'
+                                        activity.type === 'SALE' ? 'bg-green-100 text-green-600' :
+                                            activity.type === 'DELETE' ? 'bg-red-100 text-red-600' :
+                                                activity.type === 'UPDATE' ? 'bg-yellow-100 text-yellow-600' :
+                                                    'bg-gray-100 text-gray-600'
                                         }`}>
                                         {activity.type === 'ADD' && <Package size={18} />}
                                         {activity.type === 'SALE' && <DollarSign size={18} />}
