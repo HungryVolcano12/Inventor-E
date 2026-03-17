@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Moon, Sun, Type, Globe, ChevronRight, Users, Palette, Check } from 'lucide-react';
+import { Moon, Sun, Type, Globe, ChevronRight, Users, Palette, Check, MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useSubscriptionStore } from '../store/useSubscriptionStore';
@@ -8,6 +8,9 @@ import { translations } from '../utils/translations';
 
 export default function Settings() {
     const navigate = useNavigate();
+    const [isLanguageExpanded, setIsLanguageExpanded] = useState(false);
+    const [isColorExpanded, setIsColorExpanded] = useState(false);
+    const [isTextSizeExpanded, setIsTextSizeExpanded] = useState(false);
     const { theme, language, textSize, color, setTheme, setLanguage, setTextSize, setColor } = useSettingsStore();
     const { currentTier, openPaywall, upgradeTier } = useSubscriptionStore();
     const t = translations[language];
@@ -103,25 +106,53 @@ export default function Settings() {
                     icon={Type}
                     label={t.textSize}
                     value={textSize.charAt(0).toUpperCase() + textSize.slice(1)}
-                    onClick={() => {
-                        const sizes = ['small', 'medium', 'large'];
-                        const nextIndex = (sizes.indexOf(textSize) + 1) % sizes.length;
-                        setTextSize(sizes[nextIndex]);
-                    }}
+                    onClick={() => setIsTextSizeExpanded(!isTextSizeExpanded)}
+                    last={!isTextSizeExpanded}
                 />
+                <AnimatePresence>
+                    {isTextSizeExpanded && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1, transition: { duration: 0.3 } }}
+                            exit={{ height: 0, opacity: 0, transition: { duration: 0.3, delay: 0.1 } }}
+                            className="bg-muted/10 overflow-hidden"
+                        >
+                            <div className="flex flex-col p-3 gap-2">
+                                {['small', 'medium', 'large'].map((size, index) => {
+                                    const isSelected = textSize === size;
+                                    
+                                    return (
+                                        <motion.button
+                                            key={size}
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: -20 }}
+                                            transition={{ delay: index * 0.1 }}
+                                            onClick={() => {
+                                                setIsTextSizeExpanded(false);
+                                                setTimeout(() => setTextSize(size), 150);
+                                            }}
+                                            className={`flex items-center justify-between p-3 rounded-xl transition-all ${isSelected ? 'bg-primary text-primary-foreground font-medium shadow-md scale-[1.02]' : 'hover:bg-muted text-foreground hover:scale-[1.01]'}`}
+                                        >
+                                            <span>{size.charAt(0).toUpperCase() + size.slice(1)}</span>
+                                            {isSelected && <Check size={18} strokeWidth={3} className="text-primary-foreground" />}
+                                        </motion.button>
+                                    );
+                                })}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
                 <Row
                     icon={Palette}
                     label={t.colorTheme || 'Color Theme'}
                     value={(t[color] || color).charAt(0).toUpperCase() + (t[color] || color).slice(1)}
-                    onClick={() => {
-                        const currentColor = color;
-                        const colorsArray = ['pink', 'red', 'blue', 'green', 'purple', 'orange'];
-                        const nextIndex = (colorsArray.indexOf(currentColor) + 1) % colorsArray.length;
-                        setColor(colorsArray[nextIndex]);
-                    }}
+                    onClick={() => setIsColorExpanded(!isColorExpanded)}
+                    last={!isColorExpanded}
                 />
 
                 <AnimatePresence>
+                    {isColorExpanded && (
                     <motion.div
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1, transition: { duration: 0.3 } }}
@@ -129,10 +160,10 @@ export default function Settings() {
                         className="bg-muted/10 overflow-hidden"
                     >
                         <div className="p-4 flex justify-center gap-6">
-                            {['pink', 'red', 'blue', 'green', 'purple', 'orange'].map((themeColor, index) => {
-                                const colors = {
-                                    pink: '#f11d57',
-                                    red: '#ef4444',
+                                {['pink', 'red', 'blue', 'green', 'purple', 'orange'].map((themeColor, index) => {
+                                    const colors = {
+                                        pink: '#ff1493',
+                                        red: '#ef4444',
                                     blue: '#3b82f6',
                                     green: '#22c55e',
                                     purple: '#8b5cf6',
@@ -172,7 +203,23 @@ export default function Settings() {
                             })}
                         </div>
                     </motion.div>
+                    )}
                 </AnimatePresence>
+            </Section>
+
+            <Section title={t.experiencingProblems}>
+                <Row
+                    icon={MessageSquare}
+                    label={t.contactSupport}
+                    value="WhatsApp"
+                    onClick={() => {
+                        const phoneNumber = "6287761267280";
+                        const message = "Hello, I am experiencing problems with my Inventor-E app. Can you help me? My email is [user_email]";
+                        const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+                        window.open(whatsappUrl, '_blank');
+                    }}
+                    last={true}
+                />
             </Section>
 
             <Section title={t.preferences}>
@@ -180,9 +227,44 @@ export default function Settings() {
                     icon={Globe}
                     label={t.language}
                     value={language === 'en' ? t.english : t.indonesian}
-                    onClick={() => setLanguage(language === 'en' ? 'id' : 'en')}
-                    last={true}
+                    onClick={() => setIsLanguageExpanded(!isLanguageExpanded)}
+                    last={!isLanguageExpanded}
                 />
+                <AnimatePresence>
+                    {isLanguageExpanded && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1, transition: { duration: 0.3 } }}
+                            exit={{ height: 0, opacity: 0, transition: { duration: 0.3, delay: 0.1 } }}
+                            className="bg-muted/10 overflow-hidden"
+                        >
+                            <div className="flex flex-col p-3 gap-2">
+                                {['en', 'id'].map((langCode, index) => {
+                                    const isSelected = language === langCode;
+                                    const langName = langCode === 'en' ? t.english : t.indonesian;
+                                    
+                                    return (
+                                        <motion.button
+                                            key={langCode}
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, x: -20 }}
+                                            transition={{ delay: index * 0.1 }}
+                                            onClick={() => {
+                                                setIsLanguageExpanded(false);
+                                                setTimeout(() => setLanguage(langCode), 150);
+                                            }}
+                                            className={`flex items-center justify-between p-3 rounded-xl transition-all ${isSelected ? 'bg-primary text-primary-foreground font-medium shadow-md scale-[1.02]' : 'hover:bg-muted text-foreground hover:scale-[1.01]'}`}
+                                        >
+                                            <span>{langName}</span>
+                                            {isSelected && <Check size={18} strokeWidth={3} className="text-primary-foreground" />}
+                                        </motion.button>
+                                    );
+                                })}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </Section>
 
             <div className="text-center text-xs text-gray-400 mt-10">

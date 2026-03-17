@@ -31,7 +31,7 @@ function App() {
 
     // Color Theme Injection
     const colors = {
-      pink: '346 100% 58%', // #f11d57
+      pink: '328 100% 54%', // #ff1493
       red: '0 84% 60%', // #ef4444
       blue: '221 83% 53%', // #3b82f6
       green: '142 71% 45%', // #22c55e
