@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useInventoryStore } from '../store/useInventoryStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { translations } from '../utils/translations';
-import { AlertTriangle, TrendingUp, ChevronDown, Check, HelpCircle, X, Pencil, Download, FileText, Table } from 'lucide-react';
+import { AlertTriangle, TrendingUp, ChevronDown, Check, HelpCircle, X, Pencil, Download, FileText, Table, Archive } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatCurrency } from '../utils/currency';
 import { exportToPDF, exportToExcel } from '../utils/exportData';
@@ -162,7 +162,9 @@ export default function Analytics() {
 
     const maxRevenue = Math.max(...revenueData.map(d => d.revenue), 1);
 
-    const lowStockList = items.filter(item => item.stock < 5);
+    const getDeadStock = useInventoryStore((state) => state.getDeadStock);
+    const lowStockList = items.filter(item => item.stock <= (item.lowStockThreshold || 5) && item.stock > 0);
+    const deadStockList = getDeadStock(60);
 
     return (
         <div className="p-6 pb-24" onClick={() => setIsDropdownOpen(false)}>
@@ -532,6 +534,60 @@ export default function Analytics() {
                         </div>
                         <p className="text-muted-foreground font-medium">{t.noItems}</p>
                         <p className="text-xs text-muted-foreground mt-1">{t.healthyStock}</p>
+                    </div>
+                )}
+            </div>
+
+            {/* Dead Stock Alert */}
+            <div className="mt-8">
+                <h3 className="font-bold text-lg mb-2 text-foreground flex items-center gap-2">
+                    <Archive size={20} className="text-gray-500" />
+                    {t.deadStock || 'Dead Stock'}
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                    {t.deadStockInfo || 'Zero movement in the last 60 days.'}
+                </p>
+
+                {deadStockList.length > 0 ? (
+                    <div className="space-y-3">
+                        {deadStockList.map((item, index) => (
+                            <motion.div
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: index * 0.05 }}
+                                key={item.id}
+                                className="flex items-center justify-between p-4 rounded-xl bg-card border border-border hover:bg-muted/50 transition-colors group"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-lg bg-muted overflow-hidden shrink-0 border border-border">
+                                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                    </div>
+                                    <div>
+                                        <span className="font-semibold text-foreground text-sm block">{item.name}</span>
+                                        <span className="text-xs text-muted-foreground">
+                                            {item.stock} {t.units || 'units'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        navigate(`/inventory/edit/${item.id}`);
+                                    }}
+                                    className="p-2 rounded-full hover:bg-white dark:hover:bg-muted text-gray-400 hover:text-primary transition-colors opacity-0 group-hover:opacity-100"
+                                    title={t.editItem || "Edit Item"}
+                                >
+                                    <Pencil size={16} />
+                                </button>
+                            </motion.div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="p-8 rounded-2xl bg-card border border-dashed border-border text-center">
+                        <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-3">
+                            <Archive size={24} className="text-muted-foreground" />
+                        </div>
+                        <p className="text-muted-foreground font-medium">{language === 'en' ? 'No dead stock found' : 'Tidak ada stok mati ditemukan'}</p>
                     </div>
                 )}
             </div>

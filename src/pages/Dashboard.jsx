@@ -64,7 +64,7 @@ export default function Dashboard() {
         totalItems: items.length,
         totalStock: items.reduce((acc, item) => acc + item.stock, 0),
         totalValue: items.reduce((acc, item) => acc + (item.price * item.stock), 0),
-        lowStock: items.filter(item => item.stock < 5).length,
+        lowStock: items.filter(item => item.stock <= (item.lowStockThreshold || 5) && item.stock > 0).length,
         noStock: items.filter(item => item.stock === 0).length
     };
 

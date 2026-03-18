@@ -4,12 +4,17 @@ import { X, Check, Upload, Image as ImageIcon } from 'lucide-react';
 import { useInventoryStore } from '../store/useInventoryStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useSubscriptionStore } from '../store/useSubscriptionStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { translations } from '../utils/translations';
+import imageCompression from 'browser-image-compression';
+import { toast } from 'sonner';
 
 export default function AddItemSheet({ isOpen, onClose }) {
     const { addItem, items, customCategories, addCategory } = useInventoryStore();
     const { currentTier, openPaywall } = useSubscriptionStore();
     const { language } = useSettingsStore();
+    const { isOwner } = useAuthStore();
+    const ownerOnly = isOwner();
     const t = translations[language];
     const fileInputRef = useRef(null);
 
@@ -24,6 +29,7 @@ export default function AddItemSheet({ isOpen, onClose }) {
         category: '',
         price: '',
         stock: '',
+        lowStockThreshold: '5',
         description: '',
         image: '',
         costPrice: ''
@@ -31,6 +37,7 @@ export default function AddItemSheet({ isOpen, onClose }) {
 
     const [isCustomCategory, setIsCustomCategory] = useState(false);
     const [customCategoryName, setCustomCategoryName] = useState('');
+    const [isDragging, setIsDragging] = useState(false);
 
     // Reset form when sheet is opened (ensure clean slate)
     useEffect(() => {
@@ -40,6 +47,7 @@ export default function AddItemSheet({ isOpen, onClose }) {
                 category: '',
                 price: '',
                 stock: '',
+                lowStockThreshold: '5',
                 description: '',
                 image: '',
                 costPrice: ''
@@ -49,18 +57,59 @@ export default function AddItemSheet({ isOpen, onClose }) {
         }
     }, [isOpen]);
 
-    const handleImageUpload = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            if (file.size > 2 * 1024 * 1024) { // 2MB limit
-                alert("File size must be less than 2MB");
-                return;
-            }
+    const processFile = async (file) => {
+        if (!file) return;
+        
+        if (!file.type.startsWith('image/')) {
+            toast.error(language === 'en' ? 'Please upload a valid image file' : 'Harap unggah file gambar yang valid');
+            return;
+        }
+
+        try {
+            const options = {
+                maxSizeMB: 0.1, // ~100kb
+                maxWidthOrHeight: 800,
+                useWebWorker: true
+            };
+            
+            // Show loading toast
+            const toastId = toast.loading(language === 'en' ? 'Compressing image...' : 'Mengompresi gambar...');
+            
+            const compressedFile = await imageCompression(file, options);
+            
             const reader = new FileReader();
             reader.onloadend = () => {
-                setFormData({ ...formData, image: reader.result });
+                setFormData(prev => ({ ...prev, image: reader.result }));
+                toast.success(language === 'en' ? 'Image ready!' : 'Gambar siap!', { id: toastId });
             };
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(compressedFile);
+        } catch (error) {
+            console.error("Compression err:", error);
+            toast.error(language === 'en' ? 'Failed to process image' : 'Gagal memproses gambar');
+        }
+    };
+
+    const handleImageUpload = (e) => {
+        const file = e.target.files[0];
+        processFile(file);
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        setIsDragging(false);
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        setIsDragging(false);
+        const file = e.dataTransfer.files[0];
+        if (file) {
+            processFile(file);
         }
     };
 
@@ -101,14 +150,17 @@ export default function AddItemSheet({ isOpen, onClose }) {
                 image: formData.image || 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&q=80&w=800',
                 price: parseFloat(formData.price) || 0,
                 stock: parseInt(formData.stock) || 0,
+                lowStockThreshold: parseInt(formData.lowStockThreshold) || 5,
                 costPrice: parseFloat(formData.costPrice) || 0,
             });
 
             // Close immediately
             onClose();
+            toast.success(language === 'en' ? 'Item added successfully!' : 'Barang berhasil ditambahkan!');
 
         } catch (error) {
             console.error("Failed to save item:", error);
+            toast.error(language === 'en' ? 'Failed to save item' : 'Gagal menyimpan barang');
             // Fallback close if something weird happens, though unlikely with current setup
             onClose();
         }
@@ -147,7 +199,10 @@ export default function AddItemSheet({ isOpen, onClose }) {
                                     <label className="block text-sm font-medium text-muted-foreground mb-2">{t.uploadImage}</label>
                                     <div
                                         onClick={() => fileInputRef.current?.click()}
-                                        className="relative w-full h-48 rounded-xl border-2 border-dashed border-input flex flex-col items-center justify-center bg-muted/10 hover:bg-muted/20 transition-colors cursor-pointer overflow-hidden"
+                                        onDragOver={handleDragOver}
+                                        onDragLeave={handleDragLeave}
+                                        onDrop={handleDrop}
+                                        className={`relative w-full h-48 rounded-xl border-2 border-dashed flex flex-col items-center justify-center transition-colors cursor-pointer overflow-hidden ${isDragging ? 'border-primary bg-primary/10' : 'border-input bg-muted/10 hover:bg-muted/20'}`}
                                     >
                                         {formData.image ? (
                                             <>
@@ -160,11 +215,15 @@ export default function AddItemSheet({ isOpen, onClose }) {
                                             </>
                                         ) : (
                                             <div className="text-center p-4">
-                                                <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-2 text-muted-foreground">
+                                                <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2 transition-colors ${isDragging ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
                                                     <ImageIcon size={24} />
                                                 </div>
-                                                <p className="text-sm font-medium text-muted-foreground">{t.uploadImage}</p>
-                                                <p className="text-xs text-muted-foreground mt-1 opacity-70">{t.maxSize}</p>
+                                                <p className="text-sm font-medium text-muted-foreground">
+                                                    {isDragging ? (language === 'en' ? 'Drop image here' : 'Lepaskan gambar di sini') : t.uploadImage}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground mt-1 opacity-70">
+                                                    {language === 'en' ? 'Drag & drop or click to browse' : 'Tarik & lepas atau klik untuk mencari'}
+                                                </p>
                                             </div>
                                         )}
                                         <input
@@ -204,6 +263,7 @@ export default function AddItemSheet({ isOpen, onClose }) {
                                             />
                                         </div>
                                     </div>
+                                    {ownerOnly && (
                                     <div>
                                         <label className="block text-sm font-medium text-muted-foreground mb-1">{t.costPrice}</label>
                                         <div className="relative">
@@ -217,7 +277,8 @@ export default function AddItemSheet({ isOpen, onClose }) {
                                             />
                                         </div>
                                     </div>
-                                    <div className="col-span-2">
+                                    )}
+                                    <div>
                                         <label className="block text-sm font-medium text-muted-foreground mb-1">{t.stock}</label>
                                         <input
                                             required
@@ -226,6 +287,17 @@ export default function AddItemSheet({ isOpen, onClose }) {
                                             className="w-full text-lg border-b-2 border-border focus:border-primary outline-none py-2 bg-transparent text-foreground placeholder:text-muted-foreground/50"
                                             value={formData.stock}
                                             onChange={e => setFormData({ ...formData, stock: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-muted-foreground mb-1">{t.lowStockThreshold || 'Low Stock Threshold'}</label>
+                                        <input
+                                            required
+                                            type="number"
+                                            placeholder="5"
+                                            className="w-full text-lg border-b-2 border-border focus:border-primary outline-none py-2 bg-transparent text-foreground placeholder:text-muted-foreground/50"
+                                            value={formData.lowStockThreshold}
+                                            onChange={e => setFormData({ ...formData, lowStockThreshold: e.target.value })}
                                         />
                                     </div>
                                 </div>

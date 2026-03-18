@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import AppLayout from './components/layout/AppLayout';
 import Dashboard from './pages/Dashboard';
 import Inventory from './pages/Inventory';
@@ -8,10 +8,25 @@ import EditItem from './pages/EditItem';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
 import TeamManagement from './pages/TeamManagement';
+import Auth from './pages/Auth';
 import { useSettingsStore } from './store/useSettingsStore';
+import { useAuthStore } from './store/useAuthStore';
+import { useInventoryStore } from './store/useInventoryStore';
 
 function App() {
   const { theme, textSize, color } = useSettingsStore();
+  const { user, loading, initialize } = useAuthStore();
+  const { loadData } = useInventoryStore();
+
+  useEffect(() => {
+    initialize();
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      loadData();
+    }
+  }, [user]);
 
   useEffect(() => {
     // Theme
@@ -21,29 +36,42 @@ function App() {
       document.documentElement.classList.remove('dark');
     }
 
-    // Text Size (Simplified approach using CSS variable or root font-size)
-    const sizes = {
-      small: '14px',
-      medium: '16px',
-      large: '18px'
-    };
+    const sizes = { small: '14px', medium: '16px', large: '18px' };
     document.documentElement.style.fontSize = sizes[textSize] || '16px';
 
-    // Color Theme Injection
     const colors = {
-      pink: '328 100% 54%', // #ff1493
-      red: '0 84% 60%', // #ef4444
-      blue: '221 83% 53%', // #3b82f6
-      green: '142 71% 45%', // #22c55e
-      purple: '271 81% 56%', // #8b5cf6
-      orange: '24 98% 53%', // #f97316
+      pink: '328 100% 54%',
+      red: '0 84% 60%',
+      blue: '221 83% 53%',
+      green: '142 71% 45%',
+      purple: '271 81% 56%',
+      orange: '24 98% 53%',
     };
-
     if (colors[color]) {
       document.documentElement.style.setProperty('--primary', colors[color]);
     }
-
   }, [theme, textSize, color]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+          <p className="text-muted-foreground text-sm font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <BrowserRouter>
+        <Routes>
+          <Route path="*" element={<Auth />} />
+        </Routes>
+      </BrowserRouter>
+    );
+  }
 
   return (
     <BrowserRouter>
@@ -53,10 +81,11 @@ function App() {
           <Route path="inventory" element={<Inventory />} />
           <Route path="inventory/:id" element={<ItemDetails />} />
           <Route path="inventory/edit/:id" element={<EditItem />} />
-          <Route path="analytics" element={<Analytics />} /> {/* Analytics Route */}
+          <Route path="analytics" element={<Analytics />} />
           <Route path="profile" element={<Settings />} />
           <Route path="team" element={<TeamManagement />} />
         </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

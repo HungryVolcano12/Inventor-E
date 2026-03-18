@@ -8,12 +8,14 @@ export const useSettingsStore = create(
             language: 'en', // 'en' | 'id'
             textSize: 'medium', // 'small' | 'medium' | 'large'
             color: 'pink', // 'pink' | 'blue' | 'green' | 'purple' | 'orange'
+            pushNotifications: false,
 
             setTheme: (theme) => set({ theme }),
             setLanguage: (language) => set({ language }),
             setTextSize: (textSize) => set({ textSize }),
             setColor: (color) => set({ color }),
             toggleTheme: () => set((state) => ({ theme: state.theme === 'light' ? 'dark' : 'light' })),
+            setPushNotifications: (enabled) => set({ pushNotifications: enabled }),
         }),
         {
             name: 'settings-storage',

@@ -6,7 +6,7 @@ import { translations } from '../utils/translations';
 import InventoryCard from '../components/InventoryCard';
 import AddItemCard from '../components/AddItemCard';
 import SortFilterMenu from '../components/SortFilterMenu';
-import { Search, LayoutGrid, List as ListIcon, Plus, CheckSquare, Trash2, X } from 'lucide-react';
+import { Search, LayoutGrid, List as ListIcon, Plus, CheckSquare, Trash2, X, Settings2, ShoppingCart } from 'lucide-react';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 
 export default function Inventory() {
@@ -18,6 +18,7 @@ export default function Inventory() {
     const filteredItems = getFilteredItems();
     const [activeCategory, setActiveCategory] = useState('All');
     const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
+    const [globalMode, setGlobalMode] = useState('pos'); // 'pos' | 'manage'
 
     // Selection Mode State
     const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -84,19 +85,21 @@ export default function Inventory() {
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
 
+                            {globalMode === 'manage' && (
+                                <button
+                                    onClick={toggleSelectionMode}
+                                    className={`p-1.5 sm:p-2 rounded-full border border-border hover:shadow-md transition-all active:scale-90 shrink-0 ${isSelectionMode ? 'bg-primary text-white border-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                                    title={t.selectItems}
+                                >
+                                    <CheckSquare size={16} />
+                                </button>
+                            )}
+
                             <SortFilterMenu t={t} />
 
                             <button
-                                onClick={toggleSelectionMode}
-                                className={`p-1.5 sm:p-2 rounded-full border border-border hover:shadow-md transition-all active:scale-90 shrink-0 ${isSelectionMode ? 'bg-primary text-white border-primary' : 'text-muted-foreground hover:text-foreground'}`}
-                                title={t.selectItems}
-                            >
-                                <CheckSquare size={16} />
-                            </button>
-
-                            <button
                                 onClick={() => setViewMode(prev => prev === 'grid' ? 'list' : 'grid')}
-                                className="p-1.5 sm:p-2 rounded-full border border-border hover:shadow-md transition-all active:scale-90 text-muted-foreground hover:text-foreground shrink-0"
+                                className="p-1.5 sm:p-2 rounded-full border border-border hover:shadow-md transition-all active:scale-90 text-muted-foreground hover:text-foreground shrink-0 hidden sm:block"
                                 title={viewMode === 'grid' ? "Switch to List View" : "Switch to Grid View"}
                             >
                                 {viewMode === 'grid' ? <ListIcon size={16} /> : <LayoutGrid size={16} />}
@@ -104,6 +107,28 @@ export default function Inventory() {
                         </>
                     )}
                 </div>
+
+                {/* Mode Toggle */}
+                {!isSelectionMode && (
+                    <div className="flex justify-center mt-4">
+                        <div className="bg-muted p-1 rounded-xl inline-flex text-sm font-medium shadow-inner border border-border">
+                            <button
+                                onClick={() => setGlobalMode('pos')}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${globalMode === 'pos' ? 'bg-background shadow-sm text-primary font-bold' : 'text-muted-foreground hover:text-foreground'}`}
+                            >
+                                <ShoppingCart size={16} />
+                                POS Mode
+                            </button>
+                            <button
+                                onClick={() => setGlobalMode('manage')}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${globalMode === 'manage' ? 'bg-background shadow-sm text-foreground font-bold' : 'text-muted-foreground hover:text-foreground'}`}
+                            >
+                                <Settings2 size={16} />
+                                Edit Items
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Categories Scroll */}
                 {!isSelectionMode && (
@@ -142,8 +167,8 @@ export default function Inventory() {
                         }
                     >
                         <AnimatePresence mode='popLayout'>
-                            {/* Show Add Card only in All category and NOT in selection mode */}
-                            {activeCategory === 'All' && !isSelectionMode && (
+                            {/* Show Add Card only in All category and NOT in POS/selection mode */}
+                            {activeCategory === 'All' && !isSelectionMode && globalMode === 'manage' && (
                                 <AddItemCard t={t} viewMode={viewMode} />
                             )}
 
@@ -157,6 +182,7 @@ export default function Inventory() {
                                         onDelete={deleteItem}
                                         onEdit={(item) => navigate(`/inventory/edit/${item.id}`)}
                                         t={t}
+                                        globalMode={globalMode}
                                         isSelectionMode={isSelectionMode}
                                         isSelected={selectedItems.has(item.id)}
                                         onToggleSelect={handleToggleSelect}

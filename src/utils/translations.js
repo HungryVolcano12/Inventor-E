@@ -95,6 +95,18 @@ export const translations = {
         tapToAdd: 'Tap to add new product',
         tapToAddShort: 'Tap to add',
 
+        // POS & Cart
+        currentSale: 'Current Sale',
+        itemsInCart: 'items',
+        emptyCart: 'Your cart is empty.',
+        discount: 'Discount',
+        tax: 'Tax',
+        subtotal: 'Subtotal',
+        total: 'Total',
+        clearCart: 'Clear Cart',
+        completeSale: 'Complete Sale',
+        addToCart: 'Add to Cart',
+        
         // Freemium & Team Management
         teamManagement: 'Team Management',
         upgradeRequired: 'Upgrade Required',
@@ -144,7 +156,18 @@ export const translations = {
         prioritySupport: 'Priority Support',
         unlimitedTeamMembers: 'Unlimited Team Members',
         multiStoreSupport: 'Multi-Store Support',
-        roundTheClockSupport: '24/7 Phone Support'
+        roundTheClockSupport: '24/7 Phone Support',
+        
+        // Alerts & Metrics
+        pushNotifications: 'Push Notifications',
+        enablePushNotifications: 'Enable Push Notifications',
+        lowStockThreshold: 'Low Stock Threshold',
+        deadStock: 'Dead Stock',
+        noSales60Days: 'No sales in the last 60 days',
+        deadStockInfo: 'Items taking up space with zero movement recently.',
+        lowStockAlertBody: 'has dropped to',
+        units: 'units',
+        requestPermission: 'Request Permission'
     },
     id: {
         dashboard: 'Dasbor',
@@ -242,6 +265,18 @@ export const translations = {
         tapToAdd: 'Ketuk untuk tambah barang',
         tapToAddShort: 'Ketuk untuk tambah',
 
+        // POS & Cart
+        currentSale: 'Penjualan Saat Ini',
+        itemsInCart: 'barang',
+        emptyCart: 'Keranjang Anda kosong.',
+        discount: 'Diskon',
+        tax: 'Pajak',
+        subtotal: 'Subtotal',
+        total: 'Total',
+        clearCart: 'Kosongkan Keranjang',
+        completeSale: 'Selesaikan Penjualan',
+        addToCart: 'Tambah ke Keranjang',
+
         // Freemium & Team Management
         teamManagement: 'Manajemen Tim',
         upgradeRequired: 'Perlu Upgrade',
@@ -291,6 +326,17 @@ export const translations = {
         prioritySupport: 'Dukungan Prioritas',
         unlimitedTeamMembers: 'Anggota Tim Tak Terbatas',
         multiStoreSupport: 'Dukungan Multi-Toko',
-        roundTheClockSupport: 'Dukungan Telepon 24/7'
+        roundTheClockSupport: 'Dukungan Telepon 24/7',
+        
+        // Alerts & Metrics
+        pushNotifications: 'Notifikasi Push',
+        enablePushNotifications: 'Aktifkan Notifikasi Push',
+        lowStockThreshold: 'Batas Stok Menipis',
+        deadStock: 'Stok Mati',
+        noSales60Days: 'Tidak ada penjualan dalam 60 hari terakhir',
+        deadStockInfo: 'Barang yang memenuhi ruang tanpa pergerakan akhir-akhir ini.',
+        lowStockAlertBody: 'telah turun ke',
+        units: 'unit',
+        requestPermission: 'Minta Izin'
     }
 };

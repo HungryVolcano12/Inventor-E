@@ -1,168 +1,231 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import { idbStorage } from '../utils/storage';
+import { supabase } from '../lib/supabase';
+import { useAuthStore } from './useAuthStore';
 
-export const useInventoryStore = create(
-    persist(
-        (set, get) => ({
-            items: [],
-            transactions: [], // { id, itemId, type: 'SALE'|'ADJUSTMENT', quantity, price, cost, date }
-            recentActivity: [], // { id, type, message, date }
-            searchQuery: '',
-            sortBy: 'newest', // 'newest', 'price-asc', 'price-desc', 'stock-asc', 'stock-desc'
-            customCategories: [],
-            setSearchQuery: (query) => set({ searchQuery: query }),
-            setSortBy: (sort) => set({ sortBy: sort }),
+export const useInventoryStore = create((set, get) => ({
+    items: [],
+    transactions: [],
+    recentActivity: [],
+    searchQuery: '',
+    sortBy: 'newest',
+    customCategories: [],
+    loading: false,
 
-            // Helper to log activity
-            logActivity: (type, message) => set((state) => {
-                const newActivity = {
-                    id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-                    type, // 'ADD', 'SALE', 'UPDATE', 'DELETE'
-                    message,
-                    date: new Date().toISOString()
-                };
-                // Keep only last 20 activities
-                return { recentActivity: [newActivity, ...state.recentActivity].slice(0, 20) };
-            }),
+    setSearchQuery: (query) => set({ searchQuery: query }),
+    setSortBy: (sort) => set({ sortBy: sort }),
 
-            addCategory: (category) => set((state) => ({
-                customCategories: [...state.customCategories, category]
-            })),
+    // Load all data from Supabase for the current store
+    loadData: async () => {
+        const { storeId } = useAuthStore.getState();
+        if (!storeId) return;
+        set({ loading: true });
 
-            addItem: (item) => {
-                set((state) => ({
-                    items: [...state.items, {
-                        ...item,
-                        id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-                        costPrice: parseFloat(item.costPrice) || 0
-                    }]
+        const [itemsRes, txRes] = await Promise.all([
+            supabase.from('items').select('*').eq('store_id', storeId).order('created_at', { ascending: false }),
+            supabase.from('transactions').select('*').eq('store_id', storeId).order('date', { ascending: false }).limit(200),
+        ]);
+
+        const items = (itemsRes.data || []).map(mapItemFromDB);
+        const transactions = (txRes.data || []).map(mapTxFromDB);
+
+        // Build recent activity from transactions
+        const recentActivity = transactions.slice(0, 20).map(tx => ({
+            id: tx.id,
+            type: tx.type === 'SALE' ? 'SALE' : 'UPDATE',
+            message: `${tx.quantity}x ${tx.itemName}`,
+            date: tx.date
+        }));
+
+        set({ items, transactions, recentActivity, loading: false });
+
+        // Subscribe to real-time updates
+        get()._subscribeToRealtime();
+    },
+
+    _channel: null,
+
+    _subscribeToRealtime: () => {
+        const { storeId } = useAuthStore.getState();
+        if (!storeId) return;
+
+        // Unsubscribe previous
+        const prev = get()._channel;
+        if (prev) supabase.removeChannel(prev);
+
+        const channel = supabase
+            .channel(`store-${storeId}`)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'items', filter: `store_id=eq.${storeId}` }, (payload) => {
+                if (payload.eventType === 'INSERT') {
+                    set(state => ({ items: [mapItemFromDB(payload.new), ...state.items] }));
+                } else if (payload.eventType === 'UPDATE') {
+                    set(state => ({ items: state.items.map(i => i.id === payload.new.id ? mapItemFromDB(payload.new) : i) }));
+                } else if (payload.eventType === 'DELETE') {
+                    set(state => ({ items: state.items.filter(i => i.id !== payload.old.id) }));
+                }
+            })
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'transactions', filter: `store_id=eq.${storeId}` }, (payload) => {
+                const tx = mapTxFromDB(payload.new);
+                set(state => ({
+                    transactions: [tx, ...state.transactions],
+                    recentActivity: [{ id: tx.id, type: 'SALE', message: `${tx.quantity}x ${tx.itemName}`, date: tx.date }, ...state.recentActivity].slice(0, 20)
                 }));
-                get().logActivity('ADD', item.name);
-            },
+            })
+            .subscribe();
 
-            addTransaction: (transaction) => {
-                set((state) => {
-                    const safeTransaction = {
-                        ...transaction,
-                        id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-                        date: new Date().toISOString(),
-                        price: parseFloat(transaction.price) || 0,
-                        cost: parseFloat(transaction.cost) || 0,
-                        total: parseFloat(transaction.total) || 0,
-                        itemName: transaction.itemName,
-                    };
-                    return {
-                        transactions: [...(state.transactions || []), safeTransaction]
-                    };
-                });
+        set({ _channel: channel });
+    },
 
-                if (transaction.type === 'SALE') {
-                    get().logActivity('SALE', `${transaction.quantity}x ${transaction.itemName}`);
-                }
-            },
+    // Helper to log activity (local only, derived from DB)
+    logActivity: (type, message) => set((state) => {
+        const newActivity = { id: Date.now().toString(36), type, message, date: new Date().toISOString() };
+        return { recentActivity: [newActivity, ...state.recentActivity].slice(0, 20) };
+    }),
 
-            updateItem: (id, updatedItem) => {
-                const oldItem = get().items.find(i => i.id === id);
-                if (!oldItem) return;
+    addCategory: (category) => set((state) => ({
+        customCategories: [...(state.customCategories || []), category]
+    })),
 
-                set((state) => ({
-                    items: state.items.map((item) => item.id === id ? { ...item, ...updatedItem } : item)
-                }));
+    addItem: async (item) => {
+        const { storeId } = useAuthStore.getState();
+        if (!storeId) return;
+        const { data, error } = await supabase.from('items').insert({
+            store_id: storeId,
+            name: item.name,
+            category: item.category || '',
+            price: parseFloat(item.price) || 0,
+            cost_price: parseFloat(item.costPrice) || 0,
+            stock: parseInt(item.stock) || 0,
+            low_stock_threshold: parseInt(item.lowStockThreshold) || 5,
+            description: item.description || '',
+            image: item.image || ''
+        }).select().single();
+        if (error) throw error;
+        // Real-time will add it to state
+        return data;
+    },
 
-                // Activity Logging for specific fields
-                if (updatedItem.stock !== undefined && updatedItem.stock !== oldItem.stock) {
-                    const diff = updatedItem.stock - oldItem.stock;
-                    get().logActivity('UPDATE', `${oldItem.name} stock ${diff > 0 ? '+' : ''}${diff}`);
-                }
+    updateItem: async (id, updatedItem) => {
+        const dbPayload = {};
+        if (updatedItem.name !== undefined) dbPayload.name = updatedItem.name;
+        if (updatedItem.category !== undefined) dbPayload.category = updatedItem.category;
+        if (updatedItem.price !== undefined) dbPayload.price = parseFloat(updatedItem.price) || 0;
+        if (updatedItem.costPrice !== undefined) dbPayload.cost_price = parseFloat(updatedItem.costPrice) || 0;
+        if (updatedItem.stock !== undefined) dbPayload.stock = parseInt(updatedItem.stock) || 0;
+        if (updatedItem.lowStockThreshold !== undefined) dbPayload.low_stock_threshold = parseInt(updatedItem.lowStockThreshold) || 5;
+        if (updatedItem.description !== undefined) dbPayload.description = updatedItem.description;
+        if (updatedItem.image !== undefined) dbPayload.image = updatedItem.image;
 
-                if (updatedItem.name && updatedItem.name !== oldItem.name) {
-                    get().logActivity('UPDATE', `Renamed ${oldItem.name} to ${updatedItem.name}`);
-                }
+        const { error } = await supabase.from('items').update(dbPayload).eq('id', id);
+        if (error) throw error;
 
-                if (updatedItem.price && parseFloat(updatedItem.price) !== parseFloat(oldItem.price)) {
-                    get().logActivity('UPDATE', `${oldItem.name} price changed`);
-                }
-
-                if (updatedItem.costPrice && parseFloat(updatedItem.costPrice) !== parseFloat(oldItem.costPrice)) {
-                    get().logActivity('UPDATE', `${oldItem.name} cost updated`);
-                }
-
-                if (updatedItem.category && updatedItem.category !== oldItem.category) {
-                    get().logActivity('UPDATE', `${oldItem.name} category changed to ${updatedItem.category}`);
-                }
-
-                if (updatedItem.description && updatedItem.description !== oldItem.description) {
-                    get().logActivity('UPDATE', `${oldItem.name} description updated`);
-                }
-            },
-
-            deleteItem: (id) => {
-                const item = get().items.find(i => i.id === id);
-                set((state) => ({
-                    items: state.items.filter((item) => item.id !== id)
-                }));
-                if (item) get().logActivity('DELETE', item.name);
-            },
-
-            deleteItems: (ids) => {
-                const itemsToDelete = get().items.filter(i => ids.includes(i.id));
-                set((state) => ({
-                    items: state.items.filter((item) => !ids.includes(item.id))
-                }));
-                if (itemsToDelete.length > 0) {
-                    get().logActivity('DELETE', `${itemsToDelete.length} items`);
-                }
-            },
-
-            getFilteredItems: () => {
-                const { items, searchQuery, sortBy } = get();
-
-                let filtered = items;
-
-                // 1. Filter
-                if (searchQuery) {
-                    const lowerQuery = searchQuery.toLowerCase();
-                    filtered = items.filter(item =>
-                        item.name.toLowerCase().includes(lowerQuery) ||
-                        item.category.toLowerCase().includes(lowerQuery)
-                    );
-                }
-
-                // 2. Sort
-                return [...filtered].sort((a, b) => {
-                    switch (sortBy) {
-                        case 'price-asc':
-                            return a.price - b.price;
-                        case 'price-desc':
-                            return b.price - a.price;
-                        case 'stock-asc':
-                            return a.stock - b.stock;
-                        case 'stock-desc':
-                            return b.stock - a.stock;
-                        case 'newest':
-                        default:
-                            return 0; // Keep insertion order
-                    }
-                });
-            }
-        }),
-        {
-            name: 'inventory-storage-v2',
-            storage: createJSONStorage(() => idbStorage),
-            version: 4, // Bumped to 4 to include recentActivity
-            migrate: (persistedState, version) => {
-                let state = persistedState;
-                if (version < 3) {
-                    if (!Array.isArray(state.transactions)) {
-                        state.transactions = [];
+        // Check for low stock notification
+        if (updatedItem.stock !== undefined) {
+            const oldItem = get().items.find(i => i.id === id);
+            if (oldItem) {
+                const threshold = oldItem.lowStockThreshold || 5;
+                if (updatedItem.stock <= threshold && oldItem.stock > threshold) {
+                    const { pushNotifications, language } = (await import('./useSettingsStore')).useSettingsStore.getState();
+                    if (pushNotifications && 'Notification' in window && Notification.permission === 'granted') {
+                        new Notification(language === 'en' ? 'Low Stock Alert' : 'Peringatan Stok Rendah', {
+                            body: `${oldItem.name} ${language === 'en' ? 'has dropped to' : 'telah turun ke'} ${updatedItem.stock} ${language === 'en' ? 'units' : 'unit'}.`,
+                            icon: '/pwa-192x192.png'
+                        });
                     }
                 }
-                if (version < 4) {
-                    state.recentActivity = [];
-                }
-                return state;
             }
         }
-    )
-);
+    },
+
+    deleteItem: async (id) => {
+        const item = get().items.find(i => i.id === id);
+        const { error } = await supabase.from('items').delete().eq('id', id);
+        if (error) throw error;
+        if (item) get().logActivity('DELETE', item.name);
+    },
+
+    deleteItems: async (ids) => {
+        const { error } = await supabase.from('items').delete().in('id', ids);
+        if (error) throw error;
+        get().logActivity('DELETE', `${ids.length} items`);
+    },
+
+    addTransaction: async (transaction) => {
+        const { storeId } = useAuthStore.getState();
+        if (!storeId) return;
+        const { error } = await supabase.from('transactions').insert({
+            store_id: storeId,
+            item_id: transaction.itemId,
+            item_name: transaction.itemName,
+            type: transaction.type || 'SALE',
+            quantity: parseInt(transaction.quantity) || 0,
+            price: parseFloat(transaction.price) || 0,
+            cost: parseFloat(transaction.cost) || 0,
+            total: parseFloat(transaction.total) || parseFloat(transaction.price) * parseInt(transaction.quantity) || 0,
+        });
+        if (error) throw error;
+    },
+
+    getFilteredItems: () => {
+        const { items, searchQuery, sortBy } = get();
+        let filtered = items;
+        if (searchQuery) {
+            const lowerQuery = searchQuery.toLowerCase();
+            filtered = items.filter(item =>
+                item.name.toLowerCase().includes(lowerQuery) ||
+                (item.category || '').toLowerCase().includes(lowerQuery)
+            );
+        }
+        return [...filtered].sort((a, b) => {
+            switch (sortBy) {
+                case 'price-asc': return a.price - b.price;
+                case 'price-desc': return b.price - a.price;
+                case 'stock-asc': return a.stock - b.stock;
+                case 'stock-desc': return b.stock - a.stock;
+                case 'newest':
+                default: return 0;
+            }
+        });
+    },
+
+    getDeadStock: (days = 60) => {
+        const { items, transactions } = get();
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - days);
+        const salesSinceCutoff = new Set(
+            transactions
+                .filter(tr => tr.type === 'SALE' && new Date(tr.date) >= cutoff)
+                .map(tr => tr.itemId)
+        );
+        return items.filter(item => !salesSinceCutoff.has(item.id) && item.stock > 0);
+    }
+}));
+
+// --- DB ↔ App field mappers ---
+function mapItemFromDB(row) {
+    return {
+        id: row.id,
+        name: row.name,
+        category: row.category || '',
+        price: row.price || 0,
+        costPrice: row.cost_price || 0,
+        stock: row.stock || 0,
+        lowStockThreshold: row.low_stock_threshold || 5,
+        description: row.description || '',
+        image: row.image || '',
+        createdAt: row.created_at,
+    };
+}
+
+function mapTxFromDB(row) {
+    return {
+        id: row.id,
+        itemId: row.item_id,
+        itemName: row.item_name,
+        type: row.type,
+        quantity: row.quantity || 0,
+        price: row.price || 0,
+        cost: row.cost || 0,
+        total: row.total || 0,
+        date: row.date,
+    };
+}

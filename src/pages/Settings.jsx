@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Moon, Sun, Type, Globe, ChevronRight, Users, Palette, Check, MessageSquare } from 'lucide-react';
+import { Moon, Sun, Type, Globe, ChevronRight, Users, Palette, Check, MessageSquare, Bell, LogOut, Store, ShieldCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useSubscriptionStore } from '../store/useSubscriptionStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { translations } from '../utils/translations';
 
 export default function Settings() {
@@ -11,8 +13,9 @@ export default function Settings() {
     const [isLanguageExpanded, setIsLanguageExpanded] = useState(false);
     const [isColorExpanded, setIsColorExpanded] = useState(false);
     const [isTextSizeExpanded, setIsTextSizeExpanded] = useState(false);
-    const { theme, language, textSize, color, setTheme, setLanguage, setTextSize, setColor } = useSettingsStore();
+    const { theme, language, textSize, color, pushNotifications, setTheme, setLanguage, setTextSize, setColor, setPushNotifications } = useSettingsStore();
     const { currentTier, openPaywall, upgradeTier } = useSubscriptionStore();
+    const { user, userRole, storeName, signOut } = useAuthStore();
     const t = translations[language];
 
     const Section = ({ title, children }) => (
@@ -36,8 +39,14 @@ export default function Settings() {
                 <span className="font-medium text-foreground">{label}</span>
             </div>
             <div className="flex items-center gap-2 text-muted-foreground">
-                <span className="text-sm">{value}</span>
-                <ChevronRight size={16} />
+                {typeof value === 'string' ? (
+                    <>
+                        <span className="text-sm">{value}</span>
+                        <ChevronRight size={16} />
+                    </>
+                ) : (
+                    value
+                )}
             </div>
         </div>
     );
@@ -59,6 +68,39 @@ export default function Settings() {
             <header className="mb-8 mt-4">
                 <h1 className="text-3xl font-bold text-foreground">{t.settings}</h1>
             </header>
+
+            {/* Account Info */}
+            <Section title={language === 'en' ? 'Account' : 'Akun'}>
+                <div className="p-4 flex items-center gap-4 border-b border-border">
+                    <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                        <span className="text-primary font-bold text-lg">{user?.email?.[0]?.toUpperCase() || '?'}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-foreground truncate">{user?.email}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                            <Store size={12} className="text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground truncate">{storeName || '—'}</span>
+                            {userRole && (
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${userRole === 'owner' ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                                    {userRole.toUpperCase()}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                </div>
+                <div
+                    onClick={async () => {
+                        await signOut();
+                        toast.success(language === 'en' ? 'Signed out' : 'Keluar');
+                    }}
+                    className="flex items-center gap-3 p-4 cursor-pointer hover:bg-red-500/5 text-red-500 transition-colors"
+                >
+                    <div className="w-8 h-8 rounded-full bg-red-500/10 flex items-center justify-center">
+                        <LogOut size={16} />
+                    </div>
+                    <span className="font-medium">{language === 'en' ? 'Sign Out' : 'Keluar'}</span>
+                </div>
+            </Section>
 
             <Section title={t.developerTemp}>
                 <div
@@ -223,6 +265,42 @@ export default function Settings() {
             </Section>
 
             <Section title={t.preferences}>
+                <Row
+                    icon={Bell}
+                    label={t.pushNotifications || 'Push Notifications'}
+                    value={
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm text-foreground">{pushNotifications ? 'On' : 'Off'}</span>
+                            <div 
+                                className={`w-10 h-6 rounded-full p-1 transition-colors cursor-pointer ${pushNotifications ? 'bg-primary' : 'bg-muted-foreground/30'}`}
+                                onClick={async (e) => {
+                                    e.stopPropagation();
+                                    if (!pushNotifications) {
+                                        if ('Notification' in window) {
+                                            const perm = await Notification.requestPermission();
+                                            if (perm === 'granted') {
+                                                setPushNotifications(true);
+                                                toast.success(language === 'en' ? 'Notifications enabled!' : 'Notifikasi diaktifkan!');
+                                            } else {
+                                                toast.error(language === 'en' ? 'Permission denied.' : 'Izin ditolak.');
+                                            }
+                                        } else {
+                                            toast.error('Push Notifications not supported by your browser.');
+                                        }
+                                    } else {
+                                        setPushNotifications(false);
+                                    }
+                                }}
+                            >
+                                <motion.div 
+                                    className="w-4 h-4 rounded-full bg-white shadow-sm"
+                                    animate={{ x: pushNotifications ? 16 : 0 }}
+                                />
+                            </div>
+                        </div>
+                    }
+                    onClick={() => {}}
+                />
                 <Row
                     icon={Globe}
                     label={t.language}

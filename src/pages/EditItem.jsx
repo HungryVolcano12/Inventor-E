@@ -4,13 +4,18 @@ import { motion } from 'framer-motion';
 import { ChevronLeft, Check, Upload, Image as ImageIcon, X } from 'lucide-react';
 import { useInventoryStore } from '../store/useInventoryStore';
 import { useSettingsStore } from '../store/useSettingsStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { translations } from '../utils/translations';
+import imageCompression from 'browser-image-compression';
+import { toast } from 'sonner';
 
 export default function EditItem() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { items, updateItem, addCategory, customCategories } = useInventoryStore();
     const { language } = useSettingsStore();
+    const { isOwner } = useAuthStore();
+    const ownerOnly = isOwner();
     const t = translations[language];
     const fileInputRef = useRef(null);
     const existingItem = items.find(i => i.id === id);
@@ -21,12 +26,14 @@ export default function EditItem() {
         category: '',
         price: '',
         stock: '',
+        lowStockThreshold: '5',
         description: '',
         image: ''
     });
 
     const [isCustomCategory, setIsCustomCategory] = useState(false);
     const [customCategoryName, setCustomCategoryName] = useState('');
+    const [isDragging, setIsDragging] = useState(false);
 
     useEffect(() => {
         if (existingItem) {
@@ -35,6 +42,7 @@ export default function EditItem() {
                 category: existingItem.category,
                 price: existingItem.price,
                 stock: existingItem.stock,
+                lowStockThreshold: existingItem.lowStockThreshold || '5',
                 description: existingItem.description || '',
                 image: existingItem.image,
                 costPrice: existingItem.costPrice || ''
@@ -47,18 +55,58 @@ export default function EditItem() {
     const defaultCategories = ['Ceramics', 'Home Goods', 'Kitchen', 'Textiles', 'Others'];
     const allCategories = [...new Set([...defaultCategories, ...categories])];
 
-    const handleImageUpload = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            if (file.size > 2 * 1024 * 1024) {
-                alert("File size must be less than 2MB");
-                return;
-            }
+    const processFile = async (file) => {
+        if (!file) return;
+        
+        if (!file.type.startsWith('image/')) {
+            toast.error(language === 'en' ? 'Please upload a valid image file' : 'Harap unggah file gambar yang valid');
+            return;
+        }
+
+        try {
+            const options = {
+                maxSizeMB: 0.1, // ~100kb
+                maxWidthOrHeight: 800,
+                useWebWorker: true
+            };
+            
+            const toastId = toast.loading(language === 'en' ? 'Compressing image...' : 'Mengompresi gambar...');
+            
+            const compressedFile = await imageCompression(file, options);
+            
             const reader = new FileReader();
             reader.onloadend = () => {
-                setFormData({ ...formData, image: reader.result });
+                setFormData(prev => ({ ...prev, image: reader.result }));
+                toast.success(language === 'en' ? 'Image ready!' : 'Gambar siap!', { id: toastId });
             };
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(compressedFile);
+        } catch (error) {
+            console.error("Compression err:", error);
+            toast.error(language === 'en' ? 'Failed to process image' : 'Gagal memproses gambar');
+        }
+    };
+
+    const handleImageUpload = (e) => {
+        const file = e.target.files[0];
+        processFile(file);
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        setIsDragging(false);
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        setIsDragging(false);
+        const file = e.dataTransfer.files[0];
+        if (file) {
+            processFile(file);
         }
     };
 
@@ -90,11 +138,14 @@ export default function EditItem() {
                 category: finalCategory,
                 price: parseFloat(formData.price) || 0,
                 stock: parseInt(formData.stock) || 0,
+                lowStockThreshold: parseInt(formData.lowStockThreshold) || 5,
                 costPrice: parseFloat(formData.costPrice) || 0
             });
+            toast.success(language === 'en' ? 'Item updated successfully!' : 'Barang berhasil diperbarui!');
             navigate('/inventory', { replace: true });
         } catch (error) {
             console.error("Failed to update item:", error);
+            toast.error(language === 'en' ? 'Failed to update item' : 'Gagal memperbarui barang');
             navigate('/inventory', { replace: true }); // Attempt to navigate anyway
         }
     };
@@ -130,7 +181,10 @@ export default function EditItem() {
                         <label className="block text-sm font-medium text-foreground mb-2">{t.uploadImage}</label>
                         <div
                             onClick={() => fileInputRef.current?.click()}
-                            className="relative w-full h-48 rounded-xl border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer overflow-hidden"
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                            className={`relative w-full h-48 rounded-xl border-2 border-dashed flex flex-col items-center justify-center transition-colors cursor-pointer overflow-hidden ${isDragging ? 'border-primary bg-primary/10' : 'border-muted-foreground/30 bg-muted/30 hover:bg-muted/50'}`}
                         >
                             {formData.image ? (
                                 <>
@@ -143,11 +197,15 @@ export default function EditItem() {
                                 </>
                             ) : (
                                 <div className="text-center p-4">
-                                    <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mx-auto mb-2 text-muted-foreground">
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2 transition-colors ${isDragging ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
                                         <ImageIcon size={24} />
                                     </div>
-                                    <p className="text-sm font-medium text-foreground">{t.uploadImage}</p>
-                                    <p className="text-xs text-muted-foreground mt-1">{t.maxSize}</p>
+                                    <p className="text-sm font-medium text-foreground">
+                                        {isDragging ? (language === 'en' ? 'Drop image here' : 'Lepaskan gambar di sini') : t.uploadImage}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground mt-1 opacity-70">
+                                        {language === 'en' ? 'Drag & drop or click to browse' : 'Tarik & lepas atau klik untuk mencari'}
+                                    </p>
                                 </div>
                             )}
                             <input
@@ -187,6 +245,7 @@ export default function EditItem() {
                                 />
                             </div>
                         </div>
+                        {ownerOnly && (
                         <div>
                             <label className="block text-sm font-medium text-foreground mb-1">{t.costPrice}</label>
                             <div className="relative">
@@ -200,7 +259,8 @@ export default function EditItem() {
                                 />
                             </div>
                         </div>
-                        <div className="col-span-2">
+                        )}
+                        <div>
                             <label className="block text-sm font-medium text-foreground mb-1">{t.stock}</label>
                             <input
                                 required
@@ -209,6 +269,17 @@ export default function EditItem() {
                                 className="w-full text-lg border-b-2 border-border focus:border-primary outline-none py-2 bg-transparent text-foreground placeholder:text-muted-foreground"
                                 value={formData.stock}
                                 onChange={e => setFormData({ ...formData, stock: e.target.value })}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-foreground mb-1">{t.lowStockThreshold || 'Low Stock Threshold'}</label>
+                            <input
+                                required
+                                type="number"
+                                placeholder="5"
+                                className="w-full text-lg border-b-2 border-border focus:border-primary outline-none py-2 bg-transparent text-foreground placeholder:text-muted-foreground"
+                                value={formData.lowStockThreshold}
+                                onChange={e => setFormData({ ...formData, lowStockThreshold: e.target.value })}
                             />
                         </div>
                     </div>

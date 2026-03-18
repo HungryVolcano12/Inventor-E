@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Pencil, Trash2, DollarSign, CheckCircle2, Circle, AlertTriangle } from 'lucide-react';
+import { Pencil, Trash2, DollarSign, CheckCircle2, Circle, AlertTriangle, ShoppingCart } from 'lucide-react';
 import clsx from 'clsx';
 import { formatCurrency } from '../utils/currency';
 import SellModal from './SellModal';
+import { useCartStore } from '../store/useCartStore';
 
-export default function InventoryCard({ item, onEdit, onDelete, t, viewMode = 'grid', isSelectionMode = false, isSelected = false, onToggleSelect }) {
+export default function InventoryCard({ item, onEdit, onDelete, t, viewMode = 'grid', globalMode = 'pos', isSelectionMode = false, isSelected = false, onToggleSelect }) {
     const [isSellModalOpen, setIsSellModalOpen] = useState(false);
+    const [isAdding, setIsAdding] = useState(false); // To handle haptic POP animation
+    const { addItem, openCart } = useCartStore();
 
     // Fallback for t if not provided (safety)
     const safeT = t || {
@@ -24,6 +27,16 @@ export default function InventoryCard({ item, onEdit, onDelete, t, viewMode = 'g
         } else {
             setIsSellModalOpen(true);
         }
+    };
+
+    const handleAddToCart = (e) => {
+        e.stopPropagation();
+        
+        // Visual Pop Feedback
+        setIsAdding(true);
+        setTimeout(() => setIsAdding(false), 200);
+
+        addItem(item);
     };
 
     if (viewMode === 'list') {
@@ -78,8 +91,20 @@ export default function InventoryCard({ item, onEdit, onDelete, t, viewMode = 'g
                     </div>
 
                     {/* Actions - Hide in selection mode */}
-                    {!isSelectionMode && (
+                    {!isSelectionMode && globalMode === 'pos' && (
                         <div className="flex flex-col gap-2 px-2">
+                            <motion.button
+                                animate={isAdding ? { scale: 1.25 } : { scale: 1 }}
+                                transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+                                onClick={(e) => { 
+                                    handleAddToCart(e);
+                                    // Optionally: openCart(); if you want to force drawer open
+                                }}
+                                className="p-2 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-white transition-colors shadow-sm"
+                                title="Add to Cart"
+                            >
+                                <ShoppingCart size={18} />
+                            </motion.button>
                             <button
                                 onClick={(e) => { e.stopPropagation(); setIsSellModalOpen(true); }}
                                 className="p-2 rounded-full bg-primary text-white hover:bg-primary/90 shadow-sm"
@@ -90,8 +115,8 @@ export default function InventoryCard({ item, onEdit, onDelete, t, viewMode = 'g
                         </div>
                     )}
 
-                    {/* Hover Actions (Edit/Delete) - Hide in selection mode */}
-                    {!isSelectionMode && (
+                    {/* Hover Actions (Edit/Delete) - Hide in selection mode or POS mode */}
+                    {!isSelectionMode && globalMode === 'manage' && (
                         <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 backdrop-blur-sm rounded-full p-1 shadow-sm">
                             <button
                                 onClick={(e) => { e.stopPropagation(); onEdit(item); }}
@@ -152,8 +177,8 @@ export default function InventoryCard({ item, onEdit, onDelete, t, viewMode = 'g
                         </div>
                     )}
 
-                    {/* Hover Actions - Hide in Selection Mode */}
-                    {!isSelectionMode && (
+                    {/* Hover Actions - Hide in Selection Mode or POS mode */}
+                    {!isSelectionMode && globalMode === 'manage' && (
                         <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                             <button
                                 onClick={(e) => { e.stopPropagation(); onEdit(item); }}
@@ -194,14 +219,27 @@ export default function InventoryCard({ item, onEdit, onDelete, t, viewMode = 'g
                             )}
                         </div>
 
-                        {!isSelectionMode && (
-                            <button
-                                onClick={(e) => { e.stopPropagation(); setIsSellModalOpen(true); }}
-                                className="bg-primary text-white p-2 rounded-full shadow-md hover:scale-105 hover:bg-primary/90 shrink-0 transition-all mb-0.5"
-                                title={safeT.sellItem}
-                            >
-                                <DollarSign size={14} strokeWidth={2.5} />
-                            </button>
+                        {!isSelectionMode && globalMode === 'pos' && (
+                            <div className="flex gap-2">
+                                <motion.button
+                                    animate={isAdding ? { scale: 1.25 } : { scale: 1 }}
+                                    transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+                                    onClick={(e) => { 
+                                        handleAddToCart(e);
+                                    }}
+                                    className="bg-primary/10 text-primary p-2 rounded-full hover:scale-105 hover:bg-primary hover:text-white shrink-0 transition-all mb-0.5"
+                                    title="Add to Cart"
+                                >
+                                    <ShoppingCart size={14} strokeWidth={2.5} />
+                                </motion.button>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setIsSellModalOpen(true); }}
+                                    className="bg-primary text-white p-2 rounded-full shadow-md hover:scale-105 hover:bg-primary/90 shrink-0 transition-all mb-0.5"
+                                    title={safeT.sellItem}
+                                >
+                                    <DollarSign size={14} strokeWidth={2.5} />
+                                </button>
+                            </div>
                         )}
                     </div>
                 </div>
