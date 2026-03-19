@@ -9,31 +9,32 @@ export const useAuthStore = create((set, get) => ({
     userRole: null, // 'owner' | 'staff'
     storeName: null,
 
-    // Called once on app boot
     initialize: async () => {
         set({ loading: true });
+
+        // Register the auth listener FIRST so we never miss an event
+        supabase.auth.onAuthStateChange(async (_event, session) => {
+            if (_event === 'USER_UPDATED') return; // ignore metadata-only updates
+            set({ session, user: session?.user ?? null });
+            if (session?.user) {
+                await get()._loadStoreContext(session.user);
+            } else {
+                set({ storeId: null, userRole: null, storeName: null });
+            }
+        });
+
+        // Try to restore an existing session — AbortErrors are ignored gracefully
         try {
             const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
+            if (session?.user) {
                 await get()._loadStoreContext(session.user);
+                set({ session, user: session.user });
             }
-            set({ session, user: session?.user ?? null, loading: false });
-
-            // Listen to auth state changes
-            supabase.auth.onAuthStateChange(async (_event, session) => {
-                // Ignore USER_UPDATED events to prevent re-triggering loop
-                if (_event === 'USER_UPDATED') return;
-
-                set({ session, user: session?.user ?? null });
-                if (session?.user) {
-                    await get()._loadStoreContext(session.user);
-                } else {
-                    set({ storeId: null, userRole: null, storeName: null });
-                }
-            });
         } catch (err) {
-            console.error('Auth init error:', err);
-            set({ loading: false, user: null, session: null });
+            // AbortError or network error on getSession — listener will still fire when ready
+            if (err.name !== 'AbortError') console.error('getSession error:', err);
+        } finally {
+            set({ loading: false });
         }
     },
 
