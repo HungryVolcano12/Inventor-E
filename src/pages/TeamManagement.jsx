@@ -1,15 +1,18 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, UserPlus, Shield, MoreVertical, X, Check, Copy, Link as LinkIcon } from 'lucide-react';
+import { ArrowLeft, UserPlus, Shield, MoreVertical, X, Check, Copy, Link as LinkIcon, Mail } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSubscriptionStore } from '../store/useSubscriptionStore';
 import { useSettingsStore } from '../store/useSettingsStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { supabase } from '../lib/supabase';
 import { translations } from '../utils/translations';
 
 export default function TeamManagement() {
     const navigate = useNavigate();
     const { currentTier } = useSubscriptionStore();
     const { language } = useSettingsStore();
+    const { storeId } = useAuthStore();
     const t = translations[language];
 
     // Define limits based on tier
@@ -35,6 +38,8 @@ export default function TeamManagement() {
     const [isInviteOpen, setIsInviteOpen] = useState(false);
     const [inviteLink, setInviteLink] = useState('');
     const [copied, setCopied] = useState(false);
+    const [inviteEmail, setInviteEmail] = useState('');
+    const [inviteLoading, setInviteLoading] = useState(false);
 
     // Handlers
     const openEditModal = (member) => {
@@ -50,15 +55,22 @@ export default function TeamManagement() {
         setEditingMember(null);
     };
 
-    const handleGenerateLink = () => {
+    const handleGenerateLink = async () => {
         if (maxUsers !== 'Unlimited' && currentUsers >= maxUsers) {
             useSubscriptionStore.getState().openPaywall('role_limit_reached');
             return;
         }
-
-        // Generate a shareable signup link pointing to this app
-        const baseUrl = window.location.origin;
-        setInviteLink(`${baseUrl}`);
+        setInviteLoading(true);
+        const { data: token, error } = await supabase.rpc('create_store_invite', {
+            p_store_id: storeId,
+            p_email: inviteEmail || null
+        });
+        setInviteLoading(false);
+        if (error || !token) {
+            alert(error?.message || 'Failed to generate invite');
+            return;
+        }
+        setInviteLink(`${window.location.origin}/join?token=${token}`);
         setIsInviteOpen(true);
     };
 
@@ -111,16 +123,31 @@ export default function TeamManagement() {
                 </div>
             </div>
 
-            {/* Main Action Area */}
-            <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-bold text-foreground">{t.teamMembers}</h2>
-                <button
-                    onClick={handleGenerateLink}
-                    className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all"
-                >
-                    <UserPlus size={16} />
-                    {t.inviteMember}
-                </button>
+            {/* Invite Member Area */}
+            <div className="mb-6">
+                <h2 className="text-lg font-bold text-foreground mb-3">{t.teamMembers}</h2>
+                <div className="flex gap-2">
+                    <div className="relative flex-1">
+                        <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                        <input
+                            type="email"
+                            placeholder={language === 'en' ? 'Staff email (optional)' : 'Email staf (opsional)'}
+                            value={inviteEmail}
+                            onChange={e => setInviteEmail(e.target.value)}
+                            className="w-full pl-9 pr-3 py-2.5 text-sm rounded-xl border border-border bg-background text-foreground outline-none focus:border-primary transition-colors"
+                        />
+                    </div>
+                    <button
+                        onClick={handleGenerateLink}
+                        disabled={inviteLoading}
+                        className="flex items-center gap-2 bg-primary text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all disabled:opacity-60 shrink-0"
+                    >
+                        {inviteLoading
+                            ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            : <><UserPlus size={16} /> {t.inviteMember}</>
+                        }
+                    </button>
+                </div>
             </div>
 
             {/* Team List */}
@@ -229,10 +256,10 @@ export default function TeamManagement() {
                                 <LinkIcon size={24} />
                             </div>
                             <h3 className="text-xl font-bold mb-2">{t.inviteMember}</h3>
-                            <p className="text-muted-foreground text-sm mb-6">
+                            <p className="text-muted-foreground text-sm mb-4">
                                 {language === 'en'
-                                    ? 'Share this link with your team member. Ask them to sign up with their own email — you can then assign their role from the Supabase dashboard.'
-                                    : 'Bagikan tautan ini ke anggota tim Anda. Minta mereka mendaftar dengan email mereka sendiri — Anda dapat mengatur peran mereka melalui dasbor Supabase.'}
+                                    ? 'Share this link. Your team member can sign up or sign in — they will automatically join your store as Staff.'
+                                    : 'Bagikan tautan ini. Anggota tim Anda dapat mendaftar atau masuk — mereka akan otomatis bergabung ke toko Anda sebagai Staf.'}
                             </p>
 
                             <div className="bg-muted p-3 rounded-xl flex items-center justify-between gap-3 mb-6 border border-border">

@@ -9,6 +9,7 @@ import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
 import TeamManagement from './pages/TeamManagement';
 import Auth from './pages/Auth';
+import JoinStore from './pages/JoinStore';
 import { useSettingsStore } from './store/useSettingsStore';
 import { useAuthStore } from './store/useAuthStore';
 import { useInventoryStore } from './store/useInventoryStore';
@@ -67,6 +68,7 @@ function App() {
     return (
       <BrowserRouter>
         <Routes>
+          <Route path="/join" element={<JoinStore />} />
           <Route path="*" element={<Auth />} />
         </Routes>
       </BrowserRouter>
