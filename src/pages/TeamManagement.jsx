@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, UserPlus, Shield, MoreVertical, X, Check, Copy, Link as LinkIcon, Mail } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -24,10 +24,20 @@ export default function TeamManagement() {
 
     const maxUsers = teamLimits[currentTier];
 
-    // Local state for team members (in a real app, this would be in a store/DB)
-    const [teamMembers, setTeamMembers] = useState([
-        { id: 1, name: 'Store Owner', email: 'owner@inventore.app', role: 'Owner', active: true },
-    ]);
+    // Fetch real members from Supabase
+    const [teamMembers, setTeamMembers] = useState([]);
+    const [membersLoading, setMembersLoading] = useState(true);
+
+    const fetchMembers = async () => {
+        setMembersLoading(true);
+        const { data } = await supabase.rpc('get_store_members');
+        if (data) setTeamMembers(data);
+        setMembersLoading(false);
+    };
+
+    useEffect(() => {
+        fetchMembers();
+    }, []);
 
     const currentUsers = teamMembers.length;
 
@@ -151,15 +161,21 @@ export default function TeamManagement() {
 
             {/* Team List */}
             <div className="space-y-3">
-                {teamMembers.map((member) => (
-                    <div key={member.id} className="flex items-center justify-between p-4 bg-card rounded-2xl border border-border shadow-sm">
+                {membersLoading ? (
+                    <div className="p-6 text-center text-muted-foreground text-sm">Loading members...</div>
+                ) : teamMembers.length === 0 ? (
+                    <div className="p-6 text-center text-muted-foreground text-sm">No members found.</div>
+                ) : teamMembers.map((member) => (
+                    <div key={member.user_id} className="flex items-center justify-between p-4 bg-card rounded-2xl border border-border shadow-sm">
                         <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
-                                {member.name.charAt(0)}
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+                                member.role === 'owner' ? 'bg-primary text-white' : 'bg-muted text-foreground'
+                            }`}>
+                                {member.email?.charAt(0)?.toUpperCase()}
                             </div>
                             <div>
-                                <p className="font-bold text-foreground">{member.name}</p>
-                                <p className="text-xs text-muted-foreground">{member.email}</p>
+                                <p className="font-bold text-foreground">{member.email}</p>
+                                <p className="text-xs text-muted-foreground capitalize">{member.role}</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-3 relative">
