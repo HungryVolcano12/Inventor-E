@@ -56,9 +56,9 @@ export default function TeamManagement() {
             return;
         }
 
-        // Mock generating a unique invite link
-        const uniqueCode = Math.random().toString(36).substring(2, 10);
-        setInviteLink(`https://inventore.app/join/${uniqueCode}`);
+        // Generate a shareable signup link pointing to this app
+        const baseUrl = window.location.origin;
+        setInviteLink(`${baseUrl}`);
         setIsInviteOpen(true);
     };
 
@@ -229,7 +229,11 @@ export default function TeamManagement() {
                                 <LinkIcon size={24} />
                             </div>
                             <h3 className="text-xl font-bold mb-2">{t.inviteMember}</h3>
-                            <p className="text-muted-foreground text-sm mb-6">{t.shareLinkInfo}</p>
+                            <p className="text-muted-foreground text-sm mb-6">
+                                {language === 'en'
+                                    ? 'Share this link with your team member. Ask them to sign up with their own email — you can then assign their role from the Supabase dashboard.'
+                                    : 'Bagikan tautan ini ke anggota tim Anda. Minta mereka mendaftar dengan email mereka sendiri — Anda dapat mengatur peran mereka melalui dasbor Supabase.'}
+                            </p>
 
                             <div className="bg-muted p-3 rounded-xl flex items-center justify-between gap-3 mb-6 border border-border">
                                 <span className="text-sm font-medium text-foreground truncate select-all">{inviteLink}</span>
