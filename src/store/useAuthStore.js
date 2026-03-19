@@ -23,9 +23,10 @@ export const useAuthStore = create((set, get) => ({
             }
         });
 
-        // Try to restore an existing session — AbortErrors are ignored gracefully
+        // Try to restore an existing session — 5s timeout prevents infinite loading on stale tokens
         try {
-            const { data: { session } } = await supabase.auth.getSession();
+            const timeout = new Promise(res => setTimeout(() => res({ data: { session: null } }), 5000));
+            const { data: { session } } = await Promise.race([supabase.auth.getSession(), timeout]);
             if (session?.user) {
                 await get()._loadStoreContext(session.user);
                 set({ session, user: session.user });
