@@ -22,18 +22,24 @@ export default function Settings() {
     const [storeMembers, setStoreMembers] = useState([]);
     const [contextLoading, setContextLoading] = useState(false);
 
-    // Self-heal: if user is logged in but storeId is still null, retry loading
+    // Self-heal: if user is logged in but storeId is still null, retry loading (8s timeout)
     useEffect(() => {
         if (!user || storeId || contextLoading) return;
         setContextLoading(true);
-        _loadStoreContext(user).finally(() => setContextLoading(false));
+        Promise.race([
+            _loadStoreContext(user),
+            new Promise(res => setTimeout(res, 8000))
+        ]).finally(() => setContextLoading(false));
     }, [user, storeId]);
 
     useEffect(() => {
         if (!storeId) return;
-        supabase.rpc('get_store_members').then(({ data }) => {
-            if (data) setStoreMembers(data);
-        });
+        const ac = new AbortController();
+        const t = setTimeout(() => ac.abort(), 8000);
+        supabase.rpc('get_store_members').abortSignal(ac.signal)
+            .then(({ data }) => { if (data) setStoreMembers(data); })
+            .catch(() => {})
+            .finally(() => clearTimeout(t));
     }, [storeId]);
 
     const teamLimits = { free: 1, pro: 3, business: 999 };
