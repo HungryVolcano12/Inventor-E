@@ -62,7 +62,6 @@ export default function TeamManagement() {
         }
         setInviteLoading(true);
         const { data: token, error } = await supabase.rpc('create_store_invite', {
-            p_store_id: storeId,
             p_email: inviteEmail || null
         });
         setInviteLoading(false);
