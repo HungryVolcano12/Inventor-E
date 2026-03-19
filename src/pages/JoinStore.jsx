@@ -34,7 +34,7 @@ export default function JoinStore() {
 
         supabase
             .from('store_invites')
-            .select('*, stores(name)')
+            .select('*')
             .eq('token', token)
             .single()
             .then(({ data, error }) => {
@@ -130,13 +130,11 @@ export default function JoinStore() {
                     <Package size={32} className="text-white" />
                 </div>
                 <h1 className="text-2xl font-black text-foreground">
-                    {language === 'en' ? "You're invited!" : 'Anda diundang!'}
+                    {language === 'en' ? "You've been invited!" : 'Anda diundang!'}
                 </h1>
-                {inviteInfo?.stores?.name && (
-                    <p className="text-muted-foreground text-sm mt-1">
-                        {language === 'en' ? `Join` : `Bergabung ke`} <strong className="text-foreground">{inviteInfo.stores.name}</strong> {language === 'en' ? 'as Staff' : 'sebagai Staf'}
-                    </p>
-                )}
+                <p className="text-muted-foreground text-sm mt-1">
+                    {language === 'en' ? 'You will join as Staff after signing up.' : 'Anda akan bergabung sebagai Staf setelah mendaftar.'}
+                </p>
             </motion.div>
 
             <motion.div
