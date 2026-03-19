@@ -30,9 +30,18 @@ export default function TeamManagement() {
 
     const fetchMembers = async () => {
         setMembersLoading(true);
-        const { data } = await supabase.rpc('get_store_members');
-        if (data) setTeamMembers(data);
-        setMembersLoading(false);
+        try {
+            const ac = new AbortController();
+            const t = setTimeout(() => ac.abort(), 8000);
+            const { data, error } = await supabase.rpc('get_store_members').abortSignal(ac.signal);
+            clearTimeout(t);
+            if (data) setTeamMembers(data);
+            else if (error) console.error('get_store_members:', error.message);
+        } catch {
+            console.error('get_store_members timed out or failed');
+        } finally {
+            setMembersLoading(false);
+        }
     };
 
     useEffect(() => {
@@ -71,16 +80,24 @@ export default function TeamManagement() {
             return;
         }
         setInviteLoading(true);
-        const { data: token, error } = await supabase.rpc('create_store_invite', {
-            p_email: inviteEmail || null
-        });
-        setInviteLoading(false);
-        if (error || !token) {
-            alert(error?.message || 'Failed to generate invite');
-            return;
+        try {
+            const ac = new AbortController();
+            const t = setTimeout(() => ac.abort(), 8000);
+            const { data: token, error } = await supabase
+                .rpc('create_store_invite', { p_email: inviteEmail || null })
+                .abortSignal(ac.signal);
+            clearTimeout(t);
+            if (error || !token) {
+                alert(error?.message || 'Failed to generate invite — check your Supabase connection.');
+                return;
+            }
+            setInviteLink(`${window.location.origin}/join?token=${token}`);
+            setIsInviteOpen(true);
+        } catch {
+            alert('Request timed out. Please check your Supabase project is active at supabase.com and try again.');
+        } finally {
+            setInviteLoading(false);
         }
-        setInviteLink(`${window.location.origin}/join?token=${token}`);
-        setIsInviteOpen(true);
     };
 
     const handleCopy = () => {
