@@ -42,7 +42,20 @@ export const useAuthStore = create((set, get) => ({
             .single();
 
         if (error || !data) {
-            // No store yet — will be handled on first login
+            // New user — check if they have a pending store name in metadata
+            const pendingStoreName = user.user_metadata?.pending_store_name;
+            if (pendingStoreName) {
+                // Create store now, safely outside any component lifecycle
+                const { data: newStoreId } = await supabase
+                    .rpc('create_store_for_user', { store_name: pendingStoreName });
+
+                if (newStoreId) {
+                    // Clear pending metadata so we don't create again on next login
+                    await supabase.auth.updateUser({ data: { pending_store_name: null } });
+                    set({ storeId: newStoreId, userRole: 'owner', storeName: pendingStoreName });
+                    return { store_id: newStoreId, role: 'owner' };
+                }
+            }
             set({ storeId: null, userRole: null });
             return null;
         }
@@ -60,19 +73,17 @@ export const useAuthStore = create((set, get) => ({
         return data;
     },
 
+    // Store name is saved in user metadata so _loadStoreContext can create the store
+    // safely once auth state resolves — avoiding AbortError from component unmounting
     signUp: async (email, password, storeName) => {
-        const { data, error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: { pending_store_name: storeName || 'My Store' }
+            }
+        });
         if (error) throw error;
-
-        // Create a store using a SECURITY DEFINER RPC (bypasses RLS on first signup)
-        const user = data.user;
-        if (user) {
-            const { data: newStoreId, error: storeErr } = await supabase
-                .rpc('create_store_for_user', { store_name: storeName || 'My Store' });
-            if (storeErr) throw storeErr;
-
-            set({ storeId: newStoreId, userRole: 'owner', storeName: storeName || 'My Store' });
-        }
         return data;
     },
 
