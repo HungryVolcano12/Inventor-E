@@ -29,8 +29,8 @@ export default function Auth() {
             } else {
                 await signUp(email, password, storeName);
                 setSuccessMsg(language === 'en'
-                    ? 'Account created! Please check your email to confirm, then log in.'
-                    : 'Akun dibuat! Cek email Anda untuk konfirmasi, lalu masuk.');
+                    ? 'Account created! You can now sign in.'
+                    : 'Akun berhasil dibuat! Silakan masuk.');
                 setMode('login');
             }
         } catch (err) {
