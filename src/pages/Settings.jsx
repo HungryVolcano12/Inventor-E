@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Moon, Sun, Type, Globe, ChevronRight, Users, Palette, Check, MessageSquare, Bell, LogOut, Store, ShieldCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useSubscriptionStore } from '../store/useSubscriptionStore';
 import { useAuthStore } from '../store/useAuthStore';
+import { supabase } from '../lib/supabase';
 import { translations } from '../utils/translations';
 
 export default function Settings() {
@@ -15,8 +16,21 @@ export default function Settings() {
     const [isTextSizeExpanded, setIsTextSizeExpanded] = useState(false);
     const { theme, language, textSize, color, pushNotifications, setTheme, setLanguage, setTextSize, setColor, setPushNotifications } = useSettingsStore();
     const { currentTier, openPaywall, upgradeTier } = useSubscriptionStore();
-    const { user, userRole, storeName, signOut } = useAuthStore();
+    const { user, userRole, storeName, signOut, storeId } = useAuthStore();
     const t = translations[language];
+
+    const [storeMembers, setStoreMembers] = useState([]);
+    useEffect(() => {
+        if (!storeId) return;
+        supabase.rpc('get_store_members').then(({ data }) => {
+            if (data) setStoreMembers(data);
+        });
+    }, [storeId]);
+
+    const teamLimits = { free: 1, pro: 3, business: 999 };
+    const maxSeats = teamLimits[currentTier] || 1;
+    const ownerMember = storeMembers.find(m => m.role === 'owner');
+    const staffMembers = storeMembers.filter(m => m.role !== 'owner');
 
     const Section = ({ title, children }) => (
         <div className="mb-8">
@@ -101,6 +115,74 @@ export default function Settings() {
                     <span className="font-medium">{language === 'en' ? 'Sign Out' : 'Keluar'}</span>
                 </div>
             </Section>
+
+            {/* Store & Team Hierarchy */}
+            {storeId && (
+            <Section title={language === 'en' ? 'Store & Team' : 'Toko & Tim'}>
+                <div className="p-4 border-b border-border">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Store size={16} className="text-primary" />
+                            <span className="font-semibold text-foreground">{storeName || '—'}</span>
+                        </div>
+                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                            currentTier === 'business' ? 'bg-purple-500/20 text-purple-400' :
+                            currentTier === 'pro' ? 'bg-primary/20 text-primary' :
+                            'bg-muted text-muted-foreground'
+                        }`}>
+                            {currentTier.toUpperCase()}
+                        </span>
+                    </div>
+                    <div className="mt-3">
+                        <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+                            <span>{language === 'en' ? 'Team seats' : 'Kursi tim'}</span>
+                            <span>{storeMembers.length} / {maxSeats === 999 ? '\u221e' : maxSeats}</span>
+                        </div>
+                        <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                            <div className="h-full rounded-full bg-primary transition-all"
+                                style={{ width: maxSeats === 999 ? '5%' : `${Math.min((storeMembers.length / maxSeats) * 100, 100)}%` }} />
+                        </div>
+                    </div>
+                </div>
+                {ownerMember && (
+                    <div className="p-4 border-b border-border">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">{language === 'en' ? 'Owner' : 'Pemilik'}</p>
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center shrink-0">
+                                <span className="text-white font-bold text-sm">{ownerMember.email?.[0]?.toUpperCase()}</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-foreground truncate">{ownerMember.email}</p>
+                                <span className="text-[10px] font-bold text-primary uppercase">Owner</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {staffMembers.length > 0 && (
+                    <div className="p-4">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
+                            {language === 'en' ? `Staff (${staffMembers.length})` : `Staf (${staffMembers.length})`}
+                        </p>
+                        <div className="space-y-3">
+                            {staffMembers.map(m => (
+                                <div key={m.user_id} className="flex items-center gap-3">
+                                    <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${m.user_id === user?.id ? 'bg-green-500/20 ring-2 ring-green-500' : 'bg-muted'}`}>
+                                        <span className="text-foreground font-bold text-sm">{m.email?.[0]?.toUpperCase()}</span>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-foreground truncate">
+                                            {m.email}
+                                            {m.user_id === user?.id && <span className="ml-1.5 text-[10px] text-green-500 font-bold">({language === 'en' ? 'You' : 'Anda'})</span>}
+                                        </p>
+                                        <span className="text-[10px] text-muted-foreground uppercase font-semibold">Staff</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </Section>
+            )}
 
             <Section title={t.developerTemp}>
                 <div
