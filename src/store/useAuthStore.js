@@ -21,6 +21,9 @@ export const useAuthStore = create((set, get) => ({
 
             // Listen to auth state changes
             supabase.auth.onAuthStateChange(async (_event, session) => {
+                // Ignore USER_UPDATED events to prevent re-triggering loop
+                if (_event === 'USER_UPDATED') return;
+
                 set({ session, user: session?.user ?? null });
                 if (session?.user) {
                     await get()._loadStoreContext(session.user);
@@ -35,54 +38,51 @@ export const useAuthStore = create((set, get) => ({
     },
 
     _loadStoreContext: async (user) => {
-        const { data, error } = await supabase
-            .from('store_members')
-            .select('store_id, role')
-            .eq('user_id', user.id)
-            .single();
+        try {
+            const { data } = await supabase
+                .from('store_members')
+                .select('store_id, role')
+                .eq('user_id', user.id)
+                .single();
 
-        if (error || !data) {
-            // 1. Check for a pending invite token (staff joining via link)
-            const pendingToken = localStorage.getItem('pending_invite_token');
-            if (pendingToken) {
-                localStorage.removeItem('pending_invite_token');
-                const { data: claimData } = await supabase
-                    .rpc('claim_store_invite', { p_token: pendingToken });
-                if (claimData && !claimData.error) {
-                    // Re-run after claiming so we pick up the new store_members row
+            if (!data) {
+                // 1. Check for a pending invite token (staff joining via link)
+                const pendingToken = localStorage.getItem('pending_invite_token');
+                if (pendingToken) {
+                    localStorage.removeItem('pending_invite_token');
+                    await supabase.rpc('claim_store_invite', { p_token: pendingToken });
                     return get()._loadStoreContext(user);
                 }
-            }
 
-            // 2. Check for pending store name (new owner signup)
-            const pendingStoreName = user.user_metadata?.pending_store_name;
-            if (pendingStoreName) {
+                // 2. Create store for new owner signup
+                // Note: we keep pending_store_name in metadata — it's harmless after store exists
+                const storeName =
+                    user.user_metadata?.pending_store_name ||
+                    user.email?.split('@')[0] ||
+                    'My Store';
                 const { data: newStoreId } = await supabase
-                    .rpc('create_store_for_user', { store_name: pendingStoreName });
+                    .rpc('create_store_for_user', { store_name: storeName });
                 if (newStoreId) {
-                    await supabase.auth.updateUser({ data: { pending_store_name: null } });
-                    set({ storeId: newStoreId, userRole: 'owner', storeName: pendingStoreName });
-                    return { store_id: newStoreId, role: 'owner' };
+                    set({ storeId: newStoreId, userRole: 'owner', storeName });
                 }
+                return;
             }
 
-            set({ storeId: null, userRole: null });
-            return null;
+            // Load store name separately to avoid join RLS issues
+            const { data: storeData } = await supabase
+                .from('stores')
+                .select('name')
+                .eq('id', data.store_id)
+                .single();
+
+            set({
+                storeId: data.store_id,
+                userRole: data.role,
+                storeName: storeData?.name || null
+            });
+        } catch (e) {
+            console.error('loadStoreContext error:', e);
         }
-
-        // Load store name separately to avoid join RLS issues
-        const { data: storeData } = await supabase
-            .from('stores')
-            .select('name')
-            .eq('id', data.store_id)
-            .single();
-
-        set({
-            storeId: data.store_id,
-            userRole: data.role,
-            storeName: storeData?.name || null
-        });
-        return data;
     },
 
     signIn: async (email, password) => {
