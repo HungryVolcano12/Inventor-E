@@ -33,11 +33,9 @@ export default function JoinStore() {
         }
 
         supabase
-            .from('store_invites')
-            .select('*')
-            .eq('token', token)
-            .single()
-            .then(({ data, error }) => {
+            .rpc('get_invite_by_token', { p_token: token })
+            .then(({ data: rows, error }) => {
+                const data = rows?.[0];
                 if (error || !data) {
                     setInviteError(language === 'en' ? 'This invite link is invalid.' : 'Tautan undangan ini tidak valid.');
                 } else if (data.claimed_by) {
