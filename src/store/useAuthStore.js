@@ -23,14 +23,19 @@ export const useAuthStore = create((set, get) => ({
             }
         });
 
-        // Try to restore an existing session — 5s timeout prevents infinite loading on stale tokens
+        // Try to restore an existing session — 8s total timeout prevents stale session hangs
         try {
-            const timeout = new Promise(res => setTimeout(() => res({ data: { session: null } }), 5000));
-            const { data: { session } } = await Promise.race([supabase.auth.getSession(), timeout]);
-            if (session?.user) {
-                await get()._loadStoreContext(session.user);
-                set({ session, user: session.user });
-            }
+            const done = new Promise(async (resolve) => {
+                try {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    if (session?.user) {
+                        await get()._loadStoreContext(session.user);
+                        set({ session, user: session.user });
+                    }
+                } catch { /* ignore — listener will handle valid sign-ins */ }
+                resolve();
+            });
+            await Promise.race([done, new Promise(res => setTimeout(res, 8000))]);
         } catch (err) {
             // AbortError or network error on getSession — listener will still fire when ready
             if (err.name !== 'AbortError') console.error('getSession error:', err);
