@@ -37,32 +37,50 @@ export const useAuthStore = create((set, get) => ({
     _loadStoreContext: async (user) => {
         const { data, error } = await supabase
             .from('store_members')
-            .select('store_id, role, stores(name)')
+            .select('store_id, role')
             .eq('user_id', user.id)
             .single();
 
         if (error || !data) {
-            // New user — check if they have a pending store name in metadata
+            // 1. Check for a pending invite token (staff joining via link)
+            const pendingToken = localStorage.getItem('pending_invite_token');
+            if (pendingToken) {
+                localStorage.removeItem('pending_invite_token');
+                const { data: claimData } = await supabase
+                    .rpc('claim_store_invite', { p_token: pendingToken });
+                if (claimData && !claimData.error) {
+                    // Re-run after claiming so we pick up the new store_members row
+                    return get()._loadStoreContext(user);
+                }
+            }
+
+            // 2. Check for pending store name (new owner signup)
             const pendingStoreName = user.user_metadata?.pending_store_name;
             if (pendingStoreName) {
-                // Create store now, safely outside any component lifecycle
                 const { data: newStoreId } = await supabase
                     .rpc('create_store_for_user', { store_name: pendingStoreName });
-
                 if (newStoreId) {
-                    // Clear pending metadata so we don't create again on next login
                     await supabase.auth.updateUser({ data: { pending_store_name: null } });
                     set({ storeId: newStoreId, userRole: 'owner', storeName: pendingStoreName });
                     return { store_id: newStoreId, role: 'owner' };
                 }
             }
+
             set({ storeId: null, userRole: null });
             return null;
         }
+
+        // Load store name separately to avoid join RLS issues
+        const { data: storeData } = await supabase
+            .from('stores')
+            .select('name')
+            .eq('id', data.store_id)
+            .single();
+
         set({
             storeId: data.store_id,
             userRole: data.role,
-            storeName: data.stores?.name
+            storeName: storeData?.name || null
         });
         return data;
     },
@@ -73,8 +91,6 @@ export const useAuthStore = create((set, get) => ({
         return data;
     },
 
-    // Store name is saved in user metadata so _loadStoreContext can create the store
-    // safely once auth state resolves — avoiding AbortError from component unmounting
     signUp: async (email, password, storeName) => {
         const { data, error } = await supabase.auth.signUp({
             email,

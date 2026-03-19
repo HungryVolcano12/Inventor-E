@@ -60,15 +60,13 @@ export default function JoinStore() {
     }, [user, inviteInfo, checking]);
 
     const claimInvite = async () => {
+        // For already-logged-in users: save token and reload context
+        localStorage.setItem('pending_invite_token', token);
         setLoading(true);
-        const { data, error } = await supabase.rpc('claim_store_invite', { p_token: token });
-        if (error || data?.error) {
-            setError(error?.message || data?.error);
-            setLoading(false);
-            return;
+        const currentUser = useAuthStore.getState().user;
+        if (currentUser) {
+            await _loadStoreContext(currentUser);
         }
-        // Reload store context and go to dashboard
-        await _loadStoreContext(useAuthStore.getState().user);
         navigate('/', { replace: true });
     };
 
@@ -79,16 +77,15 @@ export default function JoinStore() {
 
         try {
             if (mode === 'signup') {
-                // Sign up WITHOUT creating a store
+                // Save token to localStorage — _loadStoreContext will claim it
+                // safely in the global auth listener after the component unmounts
+                localStorage.setItem('pending_invite_token', token);
                 const { data, error: signUpErr } = await supabase.auth.signUp({ email, password });
-                if (signUpErr) throw signUpErr;
-                if (data.user) {
-                    // Claim the invite (adds them to the store as staff)
-                    const { data: claimData, error: claimErr } = await supabase.rpc('claim_store_invite', { p_token: token });
-                    if (claimErr || claimData?.error) throw new Error(claimErr?.message || claimData?.error);
-                    await _loadStoreContext(data.user);
-                    navigate('/', { replace: true });
+                if (signUpErr) {
+                    localStorage.removeItem('pending_invite_token');
+                    throw signUpErr;
                 }
+                // Navigation happens automatically via onAuthStateChange in App.jsx
             } else {
                 // Sign in then claim
                 await signIn(email, password);
