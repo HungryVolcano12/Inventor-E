@@ -16,10 +16,19 @@ export default function Settings() {
     const [isTextSizeExpanded, setIsTextSizeExpanded] = useState(false);
     const { theme, language, textSize, color, pushNotifications, setTheme, setLanguage, setTextSize, setColor, setPushNotifications } = useSettingsStore();
     const { currentTier, openPaywall, upgradeTier } = useSubscriptionStore();
-    const { user, userRole, storeName, signOut, storeId } = useAuthStore();
+    const { user, userRole, storeName, signOut, storeId, _loadStoreContext } = useAuthStore();
     const t = translations[language];
 
     const [storeMembers, setStoreMembers] = useState([]);
+    const [contextLoading, setContextLoading] = useState(false);
+
+    // Self-heal: if user is logged in but storeId is still null, retry loading
+    useEffect(() => {
+        if (!user || storeId || contextLoading) return;
+        setContextLoading(true);
+        _loadStoreContext(user).finally(() => setContextLoading(false));
+    }, [user, storeId]);
+
     useEffect(() => {
         if (!storeId) return;
         supabase.rpc('get_store_members').then(({ data }) => {
