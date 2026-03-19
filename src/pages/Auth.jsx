@@ -34,7 +34,16 @@ export default function Auth() {
                 setMode('login');
             }
         } catch (err) {
-            setError(err.message || 'An error occurred');
+            const msg = err.message || '';
+            if (msg.toLowerCase().includes('email not confirmed')) {
+                setError(language === 'en'
+                    ? 'Please confirm your email first — check your inbox for a confirmation link.'
+                    : 'Konfirmasi email Anda dulu — cek kotak masuk untuk tautan konfirmasi.');
+            } else if (msg.toLowerCase().includes('invalid login')) {
+                setError(language === 'en' ? 'Wrong email or password.' : 'Email atau kata sandi salah.');
+            } else {
+                setError(msg || 'An error occurred');
+            }
         } finally {
             setLoading(false);
         }
