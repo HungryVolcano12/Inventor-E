@@ -58,7 +58,7 @@ export default function JoinStore() {
     }, [user, inviteInfo, checking]);
 
     const claimInvite = async () => {
-        // For already-logged-in users: save token and reload context
+        // For already-logged-in or sign-in users: store token so auth listener claims it
         localStorage.setItem('pending_invite_token', token);
         setLoading(true);
         const currentUser = useAuthStore.getState().user;
@@ -75,14 +75,13 @@ export default function JoinStore() {
 
         try {
             if (mode === 'signup') {
-                // Save token to localStorage — _loadStoreContext will claim it
-                // safely in the global auth listener after the component unmounts
-                localStorage.setItem('pending_invite_token', token);
-                const { data, error: signUpErr } = await supabase.auth.signUp({ email, password });
-                if (signUpErr) {
-                    localStorage.removeItem('pending_invite_token');
-                    throw signUpErr;
-                }
+                // Embed the invite token in user metadata — survives page reloads
+                // _loadStoreContext will detect and claim it on every login until success
+                const { data, error: signUpErr } = await supabase.auth.signUp({
+                    email, password,
+                    options: { data: { pending_invite_token: token } }
+                });
+                if (signUpErr) throw signUpErr;
                 // Navigation happens automatically via onAuthStateChange in App.jsx
             } else {
                 // Sign in then claim

@@ -53,18 +53,33 @@ export const useAuthStore = create((set, get) => ({
                 .single();
 
             if (!data) {
-                // 1. Check for a pending invite token (staff joining via link)
-                const pendingToken = localStorage.getItem('pending_invite_token');
+                // 1. Check for a pending invite token (from user metadata or localStorage)
+                const pendingToken =
+                    user.user_metadata?.pending_invite_token ||
+                    localStorage.getItem('pending_invite_token');
+
                 if (pendingToken) {
+                    // Clear localStorage immediately; metadata cleared on success
                     localStorage.removeItem('pending_invite_token');
-                    const { data: claimResult, error: claimError } = await supabase
-                        .rpc('claim_store_invite', { p_token: pendingToken });
-                    if (!claimError && claimResult && !claimResult.error) {
-                        // Claim succeeded — reload to pick up the new store_members row
+
+                    // Claim with 8-second timeout so hangs don't block forever
+                    const claimTimeout = new Promise(res =>
+                        setTimeout(() => res({ data: null, error: { message: 'timeout' } }), 8000));
+                    const { data: claimResult, error: claimError } = await Promise.race([
+                        supabase.rpc('claim_store_invite', { p_token: pendingToken }),
+                        claimTimeout
+                    ]);
+
+                    const alreadyClaimed = claimResult?.error?.includes?.('already');
+                    if ((!claimError && claimResult && !claimResult.error) || alreadyClaimed) {
+                        // Success or already-claimed (a previous attempt may have timed out
+                        // on client but succeeded on server) — clear metadata and reload
+                        supabase.auth.updateUser({ data: { pending_invite_token: null } }).catch(() => {});
                         return get()._loadStoreContext(user);
                     }
-                    // Claim failed (expired/used) — don't create a new store for this user
-                    console.warn('Invite claim failed:', claimResult?.error || claimError?.message);
+
+                    // Timed out or genuine error — keep metadata token for retry next login
+                    console.warn('Invite claim failed/timed out:', claimResult?.error || claimError?.message);
                     set({ storeId: null, userRole: null });
                     return null;
                 }
