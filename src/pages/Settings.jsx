@@ -31,7 +31,7 @@ export default function Settings() {
         const trimmed = nameInput.trim();
         if (!trimmed || !storeId) return;
         setNameSaving(true);
-        const { error } = await supabase.from('stores').update({ name: trimmed }).eq('id', storeId);
+        const { error } = await supabase.rpc('update_store_name', { p_store_id: storeId, p_name: trimmed });
         if (!error) {
             useAuthStore.setState({ storeName: trimmed });
             toast.success(language === 'en' ? 'Store name updated!' : 'Nama toko diperbarui!');
