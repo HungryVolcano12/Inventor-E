@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Moon, Sun, Type, Globe, ChevronRight, Users, Palette, Check, MessageSquare, Bell, LogOut, Store, ShieldCheck } from 'lucide-react';
+import { Moon, Sun, Type, Globe, ChevronRight, Users, Palette, Check, MessageSquare, Bell, LogOut, Store, ShieldCheck, Pencil, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useSettingsStore } from '../store/useSettingsStore';
@@ -21,6 +21,26 @@ export default function Settings() {
 
     const [storeMembers, setStoreMembers] = useState([]);
     const [contextLoading, setContextLoading] = useState(false);
+    const [editingName, setEditingName] = useState(false);
+    const [nameInput, setNameInput] = useState('');
+    const [nameSaving, setNameSaving] = useState(false);
+
+    const canEditStoreName = userRole === 'owner' && (currentTier === 'pro' || currentTier === 'business');
+
+    const handleSaveStoreName = async () => {
+        const trimmed = nameInput.trim();
+        if (!trimmed || !storeId) return;
+        setNameSaving(true);
+        const { error } = await supabase.from('stores').update({ name: trimmed }).eq('id', storeId);
+        if (!error) {
+            useAuthStore.setState({ storeName: trimmed });
+            toast.success(language === 'en' ? 'Store name updated!' : 'Nama toko diperbarui!');
+            setEditingName(false);
+        } else {
+            toast.error(language === 'en' ? 'Failed to save name.' : 'Gagal menyimpan nama.');
+        }
+        setNameSaving(false);
+    };
 
     // Self-heal: if user is logged in but storeId is still null, retry loading (8s timeout)
     useEffect(() => {
@@ -136,9 +156,37 @@ export default function Settings() {
             <Section title={language === 'en' ? 'Store & Team' : 'Toko & Tim'}>
                 <div className="p-4 border-b border-border">
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Store size={16} className="text-primary" />
-                            <span className="font-semibold text-foreground">{storeName || '—'}</span>
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <Store size={16} className="text-primary shrink-0" />
+                            {editingName && canEditStoreName ? (
+                                <div className="flex items-center gap-2 flex-1">
+                                    <input
+                                        autoFocus
+                                        value={nameInput}
+                                        onChange={e => setNameInput(e.target.value)}
+                                        onKeyDown={e => { if (e.key === 'Enter') handleSaveStoreName(); if (e.key === 'Escape') setEditingName(false); }}
+                                        className="flex-1 bg-muted border border-primary/40 rounded-lg px-3 py-1 text-sm font-semibold text-foreground outline-none min-w-0"
+                                        placeholder={language === 'en' ? 'Store name...' : 'Nama toko...'}
+                                    />
+                                    <button onClick={handleSaveStoreName} disabled={nameSaving}
+                                        className="text-[11px] font-bold bg-primary text-white px-3 py-1 rounded-lg shrink-0 disabled:opacity-50">
+                                        {nameSaving ? '...' : (language === 'en' ? 'Save' : 'Simpan')}
+                                    </button>
+                                    <button onClick={() => setEditingName(false)} className="text-muted-foreground hover:text-foreground shrink-0">
+                                        <X size={15} />
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <span className="font-semibold text-foreground truncate">{storeName || '—'}</span>
+                                    {canEditStoreName && (
+                                        <button onClick={() => { setNameInput(storeName || ''); setEditingName(true); }}
+                                            className="text-muted-foreground hover:text-primary transition-colors shrink-0" title="Edit store name">
+                                            <Pencil size={13} />
+                                        </button>
+                                    )}
+                                </div>
+                            )}
                         </div>
                         <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
                             currentTier === 'business' ? 'bg-purple-500/20 text-purple-400' :
