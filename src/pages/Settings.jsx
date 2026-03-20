@@ -199,6 +199,7 @@ export default function Settings() {
             </Section>
             )}
 
+            {userRole === 'owner' && (
             <Section title={t.developerTemp}>
                 <div
                     onClick={() => {
@@ -223,6 +224,7 @@ export default function Settings() {
                     {t.cycleTiersMsg}
                 </p>
             </Section>
+            )}
 
             <Section title={t.accountAndTeam}>
                 <Row
