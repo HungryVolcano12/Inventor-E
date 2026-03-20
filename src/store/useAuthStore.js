@@ -150,8 +150,10 @@ export const useAuthStore = create((set, get) => ({
     },
 
     signOut: async () => {
-        await supabase.auth.signOut();
+        // Clear local state immediately so UI transitions to Sign In right away
         set({ user: null, session: null, storeId: null, userRole: null, storeName: null });
+        // Then invalidate server-side session (non-blocking)
+        supabase.auth.signOut().catch(() => {});
     },
 
     isOwner: () => get().userRole === 'owner',
