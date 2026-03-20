@@ -107,26 +107,28 @@ export const useAuthStore = create(
                 return;
             }
 
-            // Set storeId immediately — don't let stores name query delay it
-            set({ storeId: data.store_id, userRole: data.role, storeName: null });
+            // Set storeId immediately — preserve existing storeName until stores query completes
+            set({ storeId: data.store_id, userRole: data.role });
 
-            // Load store name and tier in background (with timeout)
             try {
+                const STORE_TIMEOUT = Symbol('storeTimeout');
                 const storeQuery = supabase
                     .from('stores')
                     .select('name, tier')
                     .eq('id', data.store_id)
                     .single();
-                const storeTimeout = new Promise(res => setTimeout(() => res({ data: null, error: null }), 8000));
-                const { data: storeData } = await Promise.race([storeQuery, storeTimeout]);
-                if (storeData) {
-                    set({ storeName: storeData.name || null });
-                    if (storeData.tier) {
+                const storeResult = await Promise.race([
+                    storeQuery,
+                    new Promise(res => setTimeout(() => res(STORE_TIMEOUT), 8000))
+                ]);
+                if (storeResult !== STORE_TIMEOUT && storeResult?.data) {
+                    set({ storeName: storeResult.data.name || null });
+                    if (storeResult.data.tier) {
                         const { useSubscriptionStore } = await import('./useSubscriptionStore');
-                        useSubscriptionStore.getState().upgradeTier(storeData.tier);
+                        useSubscriptionStore.getState().upgradeTier(storeResult.data.tier);
                     }
                 }
-            } catch { /* storeName stays null — non-critical */ }
+            } catch { /* storeName stays as persisted — non-critical */ }
         } catch (e) {
             console.error('loadStoreContext error:', e);
         }
