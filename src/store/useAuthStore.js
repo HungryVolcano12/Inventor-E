@@ -46,13 +46,10 @@ export const useAuthStore = create((set, get) => ({
 
     _loadStoreContext: async (user) => {
         try {
-            const smQuery = supabase
-                .from('store_members')
-                .select('store_id, role')
-                .eq('user_id', user.id)
-                .single();
-            const smTimeout = new Promise(res => setTimeout(() => res({ data: null, error: null }), 8000));
-            const { data } = await Promise.race([smQuery, smTimeout]);
+            // Use SECURITY DEFINER RPC to bypass RLS — avoids table-level hang issues
+            const myStoreQuery = supabase.rpc('get_my_store').single();
+            const myStoreTimeout = new Promise(res => setTimeout(() => res({ data: null, error: null }), 10000));
+            const { data } = await Promise.race([myStoreQuery, myStoreTimeout]);
 
             if (!data) {
                 // 1. Check for a pending invite token (from user metadata or localStorage)
