@@ -51,9 +51,18 @@ export const useAuthStore = create(
     _loadStoreContext: async (user) => {
         try {
             // Use SECURITY DEFINER RPC to bypass RLS — avoids table-level hang issues
+            const TIMED_OUT = Symbol('timeout');
             const myStoreQuery = supabase.rpc('get_my_store').single();
-            const myStoreTimeout = new Promise(res => setTimeout(() => res({ data: null, error: null }), 10000));
-            const { data } = await Promise.race([myStoreQuery, myStoreTimeout]);
+            const myStoreTimeout = new Promise(res => setTimeout(() => res(TIMED_OUT), 10000));
+            const raceResult = await Promise.race([myStoreQuery, myStoreTimeout]);
+
+            // If timed out: preserve current state (persisted storeId stays intact)
+            if (raceResult === TIMED_OUT) {
+                console.warn('get_my_store timed out — keeping current state');
+                return null;
+            }
+
+            const { data } = raceResult;
 
             if (!data) {
                 // 1. Check for a pending invite token (from user metadata or localStorage)
@@ -62,10 +71,8 @@ export const useAuthStore = create(
                     localStorage.getItem('pending_invite_token');
 
                 if (pendingToken) {
-                    // Clear localStorage immediately; metadata cleared on success
                     localStorage.removeItem('pending_invite_token');
 
-                    // Claim with 8-second timeout so hangs don't block forever
                     const claimTimeout = new Promise(res =>
                         setTimeout(() => res({ data: null, error: { message: 'timeout' } }), 8000));
                     const { data: claimResult, error: claimError } = await Promise.race([
@@ -75,23 +82,20 @@ export const useAuthStore = create(
 
                     const alreadyClaimed = claimResult?.error?.includes?.('already');
                     if ((!claimError && claimResult && !claimResult.error) || alreadyClaimed) {
-                        // Success or already-claimed (a previous attempt may have timed out
-                        // on client but succeeded on server) — clear metadata and reload
                         supabase.auth.updateUser({ data: { pending_invite_token: null } }).catch(() => {});
                         return get()._loadStoreContext(user);
                     }
 
-                    // Timed out or genuine error — keep metadata token for retry next login
                     console.warn('Invite claim failed/timed out:', claimResult?.error || claimError?.message);
-                    set({ storeId: null, userRole: null });
+                    // Don't reset storeId — keep persisted value, retry next load
                     return null;
                 }
 
                 // 2. Only create a store if user signed up via main Auth (has pending_store_name)
-                // Users from JoinStore won't have this — skipping prevents accidental store creation
                 const pendingStoreName = user.user_metadata?.pending_store_name;
                 if (!pendingStoreName) {
-                    set({ storeId: null, userRole: null });
+                    // No store found and no way to create one — only null if not already set
+                    if (!get().storeId) set({ storeId: null, userRole: null });
                     return null;
                 }
 
