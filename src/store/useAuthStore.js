@@ -57,20 +57,30 @@ export const useAuthStore = create((set, get) => ({
                 const pendingToken = localStorage.getItem('pending_invite_token');
                 if (pendingToken) {
                     localStorage.removeItem('pending_invite_token');
-                    await supabase.rpc('claim_store_invite', { p_token: pendingToken });
-                    return get()._loadStoreContext(user);
+                    const { data: claimResult, error: claimError } = await supabase
+                        .rpc('claim_store_invite', { p_token: pendingToken });
+                    if (!claimError && claimResult && !claimResult.error) {
+                        // Claim succeeded — reload to pick up the new store_members row
+                        return get()._loadStoreContext(user);
+                    }
+                    // Claim failed (expired/used) — don't create a new store for this user
+                    console.warn('Invite claim failed:', claimResult?.error || claimError?.message);
+                    set({ storeId: null, userRole: null });
+                    return null;
                 }
 
-                // 2. Create store for new owner signup
-                // Note: we keep pending_store_name in metadata — it's harmless after store exists
-                const storeName =
-                    user.user_metadata?.pending_store_name ||
-                    user.email?.split('@')[0] ||
-                    'My Store';
+                // 2. Only create a store if user signed up via main Auth (has pending_store_name)
+                // Users from JoinStore won't have this — skipping prevents accidental store creation
+                const pendingStoreName = user.user_metadata?.pending_store_name;
+                if (!pendingStoreName) {
+                    set({ storeId: null, userRole: null });
+                    return null;
+                }
+
                 const { data: newStoreId } = await supabase
-                    .rpc('create_store_for_user', { store_name: storeName });
+                    .rpc('create_store_for_user', { store_name: pendingStoreName });
                 if (newStoreId) {
-                    set({ storeId: newStoreId, userRole: 'owner', storeName });
+                    set({ storeId: newStoreId, userRole: 'owner', storeName: pendingStoreName });
                 }
                 return;
             }
