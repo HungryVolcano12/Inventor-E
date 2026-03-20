@@ -46,11 +46,15 @@ export const useAuthStore = create((set, get) => ({
 
     _loadStoreContext: async (user) => {
         try {
+            const smAc = new AbortController();
+            const smT = setTimeout(() => smAc.abort(), 8000);
             const { data } = await supabase
                 .from('store_members')
                 .select('store_id, role')
                 .eq('user_id', user.id)
+                .abortSignal(smAc.signal)
                 .single();
+            clearTimeout(smT);
 
             if (!data) {
                 // 1. Check for a pending invite token (from user metadata or localStorage)
