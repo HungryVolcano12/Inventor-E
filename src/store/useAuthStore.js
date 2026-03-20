@@ -100,24 +100,28 @@ export const useAuthStore = create((set, get) => ({
                 return;
             }
 
-            // Load store name and tier (for staff to inherit owner's plan)
-            const { data: storeData } = await supabase
-                .from('stores')
-                .select('name, tier')
-                .eq('id', data.store_id)
-                .single();
+            // Set storeId immediately — don't let stores name query delay it
+            set({ storeId: data.store_id, userRole: data.role, storeName: null });
 
-            set({
-                storeId: data.store_id,
-                userRole: data.role,
-                storeName: storeData?.name || null
-            });
-
-            // Sync tier to subscription store so staff see owner's plan
-            if (storeData?.tier) {
-                const { useSubscriptionStore } = await import('./useSubscriptionStore');
-                useSubscriptionStore.getState().upgradeTier(storeData.tier);
-            }
+            // Load store name and tier in background (with timeout)
+            try {
+                const ac = new AbortController();
+                const t = setTimeout(() => ac.abort(), 8000);
+                const { data: storeData } = await supabase
+                    .from('stores')
+                    .select('name, tier')
+                    .eq('id', data.store_id)
+                    .abortSignal(ac.signal)
+                    .single();
+                clearTimeout(t);
+                if (storeData) {
+                    set({ storeName: storeData.name || null });
+                    if (storeData.tier) {
+                        const { useSubscriptionStore } = await import('./useSubscriptionStore');
+                        useSubscriptionStore.getState().upgradeTier(storeData.tier);
+                    }
+                }
+            } catch { /* storeName stays null — non-critical */ }
         } catch (e) {
             console.error('loadStoreContext error:', e);
         }
