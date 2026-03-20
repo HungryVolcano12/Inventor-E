@@ -17,7 +17,7 @@ export const useSubscriptionStore = create(
                     const { storeId, userRole } = useAuthStore.getState();
                     if (storeId && userRole === 'owner') {
                         const { supabase } = await import('../lib/supabase');
-                        await supabase.from('stores').update({ tier }).eq('id', storeId);
+                        await supabase.rpc('update_store_tier', { p_store_id: storeId, p_tier: tier });
                     }
                 } catch { /* non-critical, ignore */ }
             },
