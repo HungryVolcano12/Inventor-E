@@ -1,7 +1,11 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { supabase } from '../lib/supabase';
 
-export const useAuthStore = create((set, get) => ({
+export const useAuthStore = create(
+    persist(
+        (set, get) => ({
+
     user: null,
     session: null,
     loading: true,
@@ -150,4 +154,15 @@ export const useAuthStore = create((set, get) => ({
     },
 
     isOwner: () => get().userRole === 'owner',
-}));
+        }),
+        {
+            name: 'auth-store-context',
+            // Only persist store-related fields — user/session come from Supabase auth
+            partialize: (state) => ({
+                storeId: state.storeId,
+                userRole: state.userRole,
+                storeName: state.storeName,
+            }),
+        }
+    )
+);
