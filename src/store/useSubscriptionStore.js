@@ -9,7 +9,18 @@ export const useSubscriptionStore = create(
             isPaywallOpen: false,
             paywallReason: null, // e.g., 'item_limit_reached', 'role_limit_reached'
 
-            upgradeTier: (tier) => set({ currentTier: tier, isPaywallOpen: false, paywallReason: null }),
+            upgradeTier: async (tier) => {
+                set({ currentTier: tier, isPaywallOpen: false, paywallReason: null });
+                // Persist tier to Supabase so staff see the owner's plan
+                try {
+                    const { useAuthStore } = await import('./useAuthStore');
+                    const { storeId, userRole } = useAuthStore.getState();
+                    if (storeId && userRole === 'owner') {
+                        const { supabase } = await import('../lib/supabase');
+                        await supabase.from('stores').update({ tier }).eq('id', storeId);
+                    }
+                } catch { /* non-critical, ignore */ }
+            },
 
             openPaywall: (reason) => set({ isPaywallOpen: true, paywallReason: reason }),
 

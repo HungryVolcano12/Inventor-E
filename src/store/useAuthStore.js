@@ -85,10 +85,10 @@ export const useAuthStore = create((set, get) => ({
                 return;
             }
 
-            // Load store name separately to avoid join RLS issues
+            // Load store name and tier (for staff to inherit owner's plan)
             const { data: storeData } = await supabase
                 .from('stores')
-                .select('name')
+                .select('name, tier')
                 .eq('id', data.store_id)
                 .single();
 
@@ -97,6 +97,12 @@ export const useAuthStore = create((set, get) => ({
                 userRole: data.role,
                 storeName: storeData?.name || null
             });
+
+            // Sync tier to subscription store so staff see owner's plan
+            if (storeData?.tier) {
+                const { useSubscriptionStore } = await import('./useSubscriptionStore');
+                useSubscriptionStore.getState().upgradeTier(storeData.tier);
+            }
         } catch (e) {
             console.error('loadStoreContext error:', e);
         }
