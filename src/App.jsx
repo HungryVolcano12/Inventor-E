@@ -24,11 +24,11 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // Only fetch data after the store ID is fully resolved by auth
-    if (storeId) {
+    // Only fetch data after BOTH the store ID and user authentication session are fully restored
+    if (storeId && user?.id) {
       loadData();
     }
-  }, [storeId]);
+  }, [storeId, user?.id]);
 
   useEffect(() => {
     // Theme

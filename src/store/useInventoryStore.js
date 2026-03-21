@@ -25,6 +25,9 @@ export const useInventoryStore = create((set, get) => ({
             supabase.from('transactions').select('*').eq('store_id', storeId).order('date', { ascending: false }).limit(200),
         ]);
 
+        if (itemsRes.error) console.error('Error fetching inventory items:', itemsRes.error);
+        if (txRes.error) console.error('Error fetching transactions:', txRes.error);
+
         const items = (itemsRes.data || []).map(mapItemFromDB);
         const transactions = (txRes.data || []).map(mapTxFromDB);
 
