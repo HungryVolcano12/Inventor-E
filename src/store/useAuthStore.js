@@ -110,16 +110,10 @@ export const useAuthStore = create(
             // get_my_store now returns store_name + tier — no extra query needed
             set({ storeId: data.store_id, userRole: data.role, storeName: data.store_name || null });
 
-            // Sync the store's plan tier to subscription store (works for both owner and staff)
-            if (data.tier) {
+            // Sync the owner's plan tier to subscription store
+            if (data.tier && data.tier !== 'free') {
                 const { useSubscriptionStore } = await import('./useSubscriptionStore');
-                const subStore = useSubscriptionStore.getState();
-                // For staff: directly set state without triggering Supabase write
-                if (data.role === 'staff') {
-                    useSubscriptionStore.setState({ currentTier: data.tier, isPaywallOpen: false });
-                } else {
-                    subStore.upgradeTier(data.tier);
-                }
+                useSubscriptionStore.getState().upgradeTier(data.tier);
             }
         } catch (e) {
             console.error('loadStoreContext error:', e);

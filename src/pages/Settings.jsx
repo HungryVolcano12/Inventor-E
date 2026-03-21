@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Moon, Sun, Type, Globe, ChevronRight, Users, Palette, Check, MessageSquare, Bell, LogOut, Store, ShieldCheck, Pencil, X } from 'lucide-react';
+import { Moon, Sun, Type, Globe, ChevronRight, Users, Palette, Check, MessageSquare, Bell, LogOut, Store, ShieldCheck, Pencil, X, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useSettingsStore } from '../store/useSettingsStore';
@@ -52,15 +52,31 @@ export default function Settings() {
         ]).finally(() => setContextLoading(false));
     }, [user, storeId]);
 
+    const [removingId, setRemovingId] = useState(null);
+
+    const refreshMembers = async () => {
+        const TIMEOUT = Symbol('t');
+        const { data } = await Promise.race([
+            supabase.rpc('get_store_members'),
+            new Promise(res => setTimeout(() => res(TIMEOUT), 8000))
+        ]).then(r => r === TIMEOUT ? { data: null } : r).catch(() => ({ data: null }));
+        if (data) setStoreMembers(data);
+    };
+
     useEffect(() => {
         if (!storeId) return;
-        const ac = new AbortController();
-        const t = setTimeout(() => ac.abort(), 8000);
-        supabase.rpc('get_store_members').abortSignal(ac.signal)
-            .then(({ data }) => { if (data) setStoreMembers(data); })
-            .catch(() => {})
-            .finally(() => clearTimeout(t));
+        refreshMembers();
     }, [storeId]);
+
+    const handleRemoveMember = async (memberId) => {
+        if (!window.confirm(language === 'en' ? 'Remove this staff member?' : 'Hapus anggota ini?')) return;
+        setRemovingId(memberId);
+        const { error } = await supabase.rpc('remove_store_member', { p_user_id: memberId });
+        if (!error) {
+            setStoreMembers(prev => prev.filter(m => m.user_id !== memberId));
+        }
+        setRemovingId(null);
+    };
 
     const teamLimits = { free: 1, pro: 3, business: 999 };
     const maxSeats = teamLimits[currentTier] || 1;
@@ -239,6 +255,17 @@ export default function Settings() {
                                         </p>
                                         <span className="text-[10px] text-muted-foreground uppercase font-semibold">Staff</span>
                                     </div>
+                                    {userRole === 'owner' && m.user_id !== user?.id && (
+                                        <button
+                                            onClick={() => handleRemoveMember(m.user_id)}
+                                            disabled={removingId === m.user_id}
+                                            className="text-red-400 hover:text-red-500 transition-colors shrink-0 disabled:opacity-40"
+                                            title={language === 'en' ? 'Remove member' : 'Hapus anggota'}>
+                                            {removingId === m.user_id
+                                                ? <span className="text-[10px]">...</span>
+                                                : <Trash2 size={14} />}
+                                        </button>
+                                    )}
                                 </div>
                             ))}
                         </div>

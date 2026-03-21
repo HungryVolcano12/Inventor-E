@@ -31,12 +31,13 @@ export default function TeamManagement() {
     const fetchMembers = async () => {
         setMembersLoading(true);
         try {
-            const ac = new AbortController();
-            const t = setTimeout(() => ac.abort(), 8000);
-            const { data, error } = await supabase.rpc('get_store_members').abortSignal(ac.signal);
-            clearTimeout(t);
-            if (data) setTeamMembers(data);
-            else if (error) console.error('get_store_members:', error.message);
+            const TIMEOUT = Symbol('t');
+            const result = await Promise.race([
+                supabase.rpc('get_store_members'),
+                new Promise(res => setTimeout(() => res(TIMEOUT), 8000))
+            ]);
+            if (result !== TIMEOUT && result.data) setTeamMembers(result.data);
+            else if (result !== TIMEOUT && result.error) console.error('get_store_members:', result.error.message);
         } catch {
             console.error('get_store_members timed out or failed');
         } finally {
@@ -81,12 +82,16 @@ export default function TeamManagement() {
         }
         setInviteLoading(true);
         try {
-            const ac = new AbortController();
-            const t = setTimeout(() => ac.abort(), 8000);
-            const { data: token, error } = await supabase
-                .rpc('create_store_invite', { p_email: inviteEmail || null })
-                .abortSignal(ac.signal);
-            clearTimeout(t);
+            const TIMEOUT = Symbol('t');
+            const result = await Promise.race([
+                supabase.rpc('create_store_invite', { p_email: inviteEmail || null }),
+                new Promise(res => setTimeout(() => res(TIMEOUT), 8000))
+            ]);
+            if (result === TIMEOUT) {
+                alert('Request timed out. Please check your Supabase project is active and try again.');
+                return;
+            }
+            const { data: token, error } = result;
             if (error || !token) {
                 alert(error?.message || 'Failed to generate invite — check your Supabase connection.');
                 return;
@@ -94,7 +99,7 @@ export default function TeamManagement() {
             setInviteLink(`${window.location.origin}/join?token=${token}`);
             setIsInviteOpen(true);
         } catch {
-            alert('Request timed out. Please check your Supabase project is active at supabase.com and try again.');
+            alert('Request failed. Please try again.');
         } finally {
             setInviteLoading(false);
         }
