@@ -100,7 +100,8 @@ export const useInventoryStore = create((set, get) => ({
             image: item.image || ''
         }).select().single();
         if (error) throw error;
-        // Real-time will add it to state
+        // Update state directly — don't rely on real-time
+        if (data) set(state => ({ items: [mapItemFromDB(data), ...state.items] }));
         return data;
     },
 
@@ -115,8 +116,10 @@ export const useInventoryStore = create((set, get) => ({
         if (updatedItem.description !== undefined) dbPayload.description = updatedItem.description;
         if (updatedItem.image !== undefined) dbPayload.image = updatedItem.image;
 
-        const { error } = await supabase.from('items').update(dbPayload).eq('id', id);
+        const { data: updated, error } = await supabase.from('items').update(dbPayload).eq('id', id).select().single();
         if (error) throw error;
+        // Update state directly
+        if (updated) set(state => ({ items: state.items.map(i => i.id === id ? mapItemFromDB(updated) : i) }));
 
         // Check for low stock notification
         if (updatedItem.stock !== undefined) {
@@ -140,12 +143,16 @@ export const useInventoryStore = create((set, get) => ({
         const item = get().items.find(i => i.id === id);
         const { error } = await supabase.from('items').delete().eq('id', id);
         if (error) throw error;
+        // Remove from state directly
+        set(state => ({ items: state.items.filter(i => i.id !== id) }));
         if (item) get().logActivity('DELETE', item.name);
     },
 
     deleteItems: async (ids) => {
         const { error } = await supabase.from('items').delete().in('id', ids);
         if (error) throw error;
+        // Remove from state directly
+        set(state => ({ items: state.items.filter(i => !ids.includes(i.id)) }));
         get().logActivity('DELETE', `${ids.length} items`);
     },
 
