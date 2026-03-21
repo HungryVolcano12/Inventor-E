@@ -88,17 +88,18 @@ export const useInventoryStore = create((set, get) => ({
     addItem: async (item) => {
         const { storeId } = useAuthStore.getState();
         if (!storeId) return;
-        const { data, error } = await supabase.from('items').insert({
-            store_id: storeId,
-            name: item.name,
-            category: item.category || '',
-            price: parseFloat(item.price) || 0,
-            cost_price: parseFloat(item.costPrice) || 0,
-            stock: parseInt(item.stock) || 0,
-            low_stock_threshold: parseInt(item.lowStockThreshold) || 5,
-            description: item.description || '',
-            image: item.image || ''
-        }).select().single();
+        const { data, error } = await supabase.rpc('insert_store_item', {
+            p_store_id: storeId,
+            p_name: item.name,
+            p_category: item.category || '',
+            p_price: parseFloat(item.price) || 0,
+            p_cost_price: parseFloat(item.costPrice) || 0,
+            p_stock: parseInt(item.stock) || 0,
+            p_low_stock: parseInt(item.lowStockThreshold) || 5,
+            p_desc: item.description || '',
+            p_image: item.image || ''
+        }).single();
+
         if (error) throw error;
         // Update state directly — don't rely on real-time
         if (data) set(state => ({ items: [mapItemFromDB(data), ...state.items] }));
