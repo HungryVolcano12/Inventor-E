@@ -64,9 +64,9 @@ export default function Settings() {
     };
 
     useEffect(() => {
-        if (!storeId) return;
+        if (!storeId || !user) return;
         refreshMembers();
-    }, [storeId]);
+    }, [storeId, user?.id]);
 
     const handleRemoveMember = async (memberId) => {
         if (!window.confirm(language === 'en' ? 'Remove this staff member?' : 'Hapus anggota ini?')) return;
