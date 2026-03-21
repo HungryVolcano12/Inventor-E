@@ -125,28 +125,27 @@ export default function AddItemSheet({ isOpen, onClose }) {
     };
 
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         // Freemium limit check
         if (items.length >= 50 && currentTier === 'free') {
-            onClose(); // Close the add sheet
-            openPaywall('item_limit_reached'); // Show paywall
-            return; // Prevent saving
+            onClose();
+            openPaywall('item_limit_reached');
+            return;
         }
 
         try {
             let finalCategory = formData.category;
             if (isCustomCategory) {
-                if (!customCategoryName.trim()) return; // Prevent empty category
+                if (!customCategoryName.trim()) return;
                 finalCategory = customCategoryName;
-                addCategory(finalCategory); // Add to global store
+                addCategory(finalCategory);
             }
 
-            addItem({
+            await addItem({
                 ...formData,
                 category: finalCategory,
-                // Use placeholder if no image uploaded
                 image: formData.image || 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&q=80&w=800',
                 price: parseFloat(formData.price) || 0,
                 stock: parseInt(formData.stock) || 0,
@@ -154,15 +153,12 @@ export default function AddItemSheet({ isOpen, onClose }) {
                 costPrice: parseFloat(formData.costPrice) || 0,
             });
 
-            // Close immediately
             onClose();
             toast.success(language === 'en' ? 'Item added successfully!' : 'Barang berhasil ditambahkan!');
 
         } catch (error) {
-            console.error("Failed to save item:", error);
-            toast.error(language === 'en' ? 'Failed to save item' : 'Gagal menyimpan barang');
-            // Fallback close if something weird happens, though unlikely with current setup
-            onClose();
+            console.error('Failed to save item:', error);
+            toast.error(language === 'en' ? `Failed to save item: ${error.message}` : `Gagal menyimpan: ${error.message}`);
         }
     };
 
