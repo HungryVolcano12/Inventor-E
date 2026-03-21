@@ -21,8 +21,8 @@ export const useInventoryStore = create((set, get) => ({
         set({ loading: true });
 
         const [itemsRes, txRes] = await Promise.all([
-            supabase.from('items').select('*').eq('store_id', storeId).order('created_at', { ascending: false }),
-            supabase.from('transactions').select('*').eq('store_id', storeId).order('date', { ascending: false }).limit(200),
+            supabase.rpc('get_store_items', { p_store_id: storeId }),
+            supabase.rpc('get_store_transactions', { p_store_id: storeId }),
         ]);
 
         if (itemsRes.error) console.error('Error fetching inventory items:', itemsRes.error);
@@ -120,7 +120,17 @@ export const useInventoryStore = create((set, get) => ({
         if (updatedItem.description !== undefined) dbPayload.description = updatedItem.description;
         if (updatedItem.image !== undefined) dbPayload.image = updatedItem.image;
 
-        const { data: updated, error } = await supabase.from('items').update(dbPayload).eq('id', id).select().single();
+        const { data: updated, error } = await supabase.rpc('update_store_item', {
+            p_item_id: id,
+            p_name: dbPayload.name !== undefined ? dbPayload.name : null,
+            p_category: dbPayload.category !== undefined ? dbPayload.category : null,
+            p_price: dbPayload.price !== undefined ? dbPayload.price : null,
+            p_cost_price: dbPayload.cost_price !== undefined ? dbPayload.cost_price : null,
+            p_stock: dbPayload.stock !== undefined ? dbPayload.stock : null,
+            p_low_stock: dbPayload.low_stock_threshold !== undefined ? dbPayload.low_stock_threshold : null,
+            p_desc: dbPayload.description !== undefined ? dbPayload.description : null,
+            p_image: dbPayload.image !== undefined ? dbPayload.image : null
+        }).single();
         if (error) throw error;
         // Update state directly
         if (updated) set(state => ({ items: state.items.map(i => i.id === id ? mapItemFromDB(updated) : i) }));
@@ -145,7 +155,7 @@ export const useInventoryStore = create((set, get) => ({
 
     deleteItem: async (id) => {
         const item = get().items.find(i => i.id === id);
-        const { error } = await supabase.from('items').delete().eq('id', id);
+        const { error } = await supabase.rpc('delete_store_item', { p_item_id: id });
         if (error) throw error;
         // Remove from state directly
         set(state => ({ items: state.items.filter(i => i.id !== id) }));
@@ -153,7 +163,7 @@ export const useInventoryStore = create((set, get) => ({
     },
 
     deleteItems: async (ids) => {
-        const { error } = await supabase.from('items').delete().in('id', ids);
+        const { error } = await supabase.rpc('delete_store_items', { p_item_ids: ids });
         if (error) throw error;
         // Remove from state directly
         set(state => ({ items: state.items.filter(i => !ids.includes(i.id)) }));
@@ -163,15 +173,14 @@ export const useInventoryStore = create((set, get) => ({
     addTransaction: async (transaction) => {
         const { storeId } = useAuthStore.getState();
         if (!storeId) return;
-        const { error } = await supabase.from('transactions').insert({
-            store_id: storeId,
-            item_id: transaction.itemId,
-            item_name: transaction.itemName,
-            type: transaction.type || 'SALE',
-            quantity: parseInt(transaction.quantity) || 0,
-            price: parseFloat(transaction.price) || 0,
-            cost: parseFloat(transaction.cost) || 0,
-            total: parseFloat(transaction.total) || parseFloat(transaction.price) * parseInt(transaction.quantity) || 0,
+        const { error } = await supabase.rpc('insert_store_transaction', {
+            p_store_id: storeId,
+            p_item_id: transaction.itemId,
+            p_item_name: transaction.itemName,
+            p_type: transaction.type || 'SALE',
+            p_quantity: parseInt(transaction.quantity) || 0,
+            p_price: parseFloat(transaction.price) || 0,
+            p_total: parseFloat(transaction.total) || parseFloat(transaction.price) * parseInt(transaction.quantity) || 0
         });
         if (error) throw error;
     },
