@@ -16,7 +16,7 @@ import { useInventoryStore } from './store/useInventoryStore';
 
 function App() {
   const { theme, textSize, color } = useSettingsStore();
-  const { user, loading, initialize } = useAuthStore();
+  const { user, storeId, loading, initialize } = useAuthStore();
   const { loadData } = useInventoryStore();
 
   useEffect(() => {
@@ -24,10 +24,11 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (user) {
+    // Only fetch data after the store ID is fully resolved by auth
+    if (storeId) {
       loadData();
     }
-  }, [user]);
+  }, [storeId]);
 
   useEffect(() => {
     // Theme
