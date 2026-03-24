@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { 
     X, 
     ShoppingCart, 
@@ -9,9 +9,12 @@ import {
     Receipt, 
     Tag, 
     Percent, 
-    DollarSign 
+    DollarSign,
+    MessageCircle,
+    CheckCircle2
 } from 'lucide-react';
 import { useCartStore } from '../store/useCartStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useInventoryStore } from '../store/useInventoryStore';
 import { formatCurrency } from '../utils/currency';
@@ -43,8 +46,10 @@ export default function CartDrawer() {
     } = useCartStore();
 
     const { updateItem, addTransaction } = useInventoryStore();
+    const { storeName } = useAuthStore();
 
-    // Local states for input handling to prevent aggressive re-renders while typing
+    // Local states
+    const [completedSale, setCompletedSale] = useState(null);
     const [localTax, setLocalTax] = useState(taxRate);
     const [localDiscount, setLocalDiscount] = useState(discountValue);
 
@@ -59,6 +64,12 @@ export default function CartDrawer() {
         setLocalDiscount(e.target.value);
         setDiscountValue(val);
     };
+
+    React.useEffect(() => {
+        if (!isOpen) {
+            setCompletedSale(null);
+        }
+    }, [isOpen]);
 
     const handleCheckout = () => {
         if (items.length === 0) return;
@@ -81,23 +92,45 @@ export default function CartDrawer() {
             });
         });
 
-        // 2. Generate PDF Receipt
-        generateReceipt({
-            items,
+        const newSale = {
+            items: [...items],
             subtotal: getSubtotal(),
             discount: getDiscountAmount(),
             tax: getTaxAmount(),
             total: getTotal(),
-            transactionId
-        });
+            transactionId,
+            date: new Date()
+        };
 
-        // 3. Reset Cart Session
+        setCompletedSale(newSale);
         clearCart();
-        closeCart();
 
         toast.success(t.completeSale || 'Checkout Successful!', {
             description: `Transaction ${transactionId} has been recorded.`
         });
+    };
+
+    const handleWhatsAppShare = () => {
+        if (!completedSale) return;
+        const { items, subtotal, discount, tax, total, transactionId, date } = completedSale;
+        const sName = storeName || 'Inventor-E Store';
+        const { receiptFooter } = useSettingsStore.getState();
+        
+        let msg = `*${sName.toUpperCase()}*\n`;
+        msg += `Receipt: ${transactionId}\n`;
+        msg += `Date: ${date.toLocaleDateString()} ${date.toLocaleTimeString()}\n\n`;
+        items.forEach(i => {
+            msg += `${i.name}\n${i.cartQuantity} x ${formatCurrency(i.price)} = ${formatCurrency(i.price * i.cartQuantity)}\n`;
+        });
+        msg += `\nSubtotal: ${formatCurrency(subtotal)}`;
+        if (discount > 0) msg += `\nDiscount: -${formatCurrency(discount)}`;
+        if (tax > 0) msg += `\nTax: +${formatCurrency(tax)}`;
+        msg += `\n*TOTAL: ${formatCurrency(total)}*\n\n`;
+        if (receiptFooter) msg += `${receiptFooter}\n`;
+        else msg += `Thank you for your purchase!`;
+
+        const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+        window.open(url, '_blank');
     };
 
     return (
@@ -149,8 +182,54 @@ export default function CartDrawer() {
                             </div>
                         </div>
 
-                        {/* Cart Items List */}
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        {completedSale ? (
+                            <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center justify-center space-y-6">
+                                <motion.div 
+                                    initial={{ scale: 0.8, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    transition={{ type: "spring", bounce: 0.5 }}
+                                    className="w-24 h-24 bg-green-500/10 rounded-full flex items-center justify-center text-green-500"
+                                >
+                                    <CheckCircle2 size={48} strokeWidth={2.5} />
+                                </motion.div>
+                                
+                                <div className="text-center space-y-2">
+                                    <h3 className="text-2xl font-black text-foreground">{t.completeSale || 'Transaction Complete!'}</h3>
+                                    <p className="text-muted-foreground text-sm font-medium">Receipt #{completedSale.transactionId}</p>
+                                    <p className="text-3xl font-black text-primary mt-2">{formatCurrency(completedSale.total)}</p>
+                                </div>
+
+                                <div className="w-full space-y-3 pt-6 border-t border-border border-dashed">
+                                    <button 
+                                        onClick={() => generateReceipt(completedSale)}
+                                        className="w-full p-4 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.98]"
+                                    >
+                                        <Receipt size={20} />
+                                        Print / Download Receipt
+                                    </button>
+                                    
+                                    <button 
+                                        onClick={handleWhatsAppShare}
+                                        className="w-full p-4 rounded-xl font-bold bg-[#25D366] text-white hover:bg-[#20BE59] flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.98]"
+                                        title="Available for Pro users"
+                                    >
+                                        <MessageCircle size={20} />
+                                        Share via WhatsApp
+                                    </button>
+                                    
+                                    <button 
+                                        onClick={() => setCompletedSale(null)}
+                                        className="w-full p-4 rounded-xl font-bold bg-muted text-foreground hover:bg-muted/80 flex items-center justify-center gap-2 transition-all"
+                                    >
+                                        <Plus size={20} />
+                                        New Sale
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Cart Items List */}
+                                <div className="flex-1 overflow-y-auto p-4 space-y-4">
                             {items.length === 0 ? (
                                 <div className="h-full flex flex-col items-center justify-center text-muted-foreground space-y-4 opacity-70">
                                     <div className="bg-muted p-5 rounded-full mb-2">
@@ -312,6 +391,8 @@ export default function CartDrawer() {
                                     </button>
                                 </div>
                             </div>
+                        )}
+                            </>
                         )}
                     </motion.div>
                 </>

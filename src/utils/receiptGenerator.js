@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { formatCurrency } from './currency';
+import { useSettingsStore } from '../store/useSettingsStore';
 
 export const generateReceipt = ({ items, subtotal, discount, tax, total, transactionId }) => {
     // Standard receipt format typical for thermal printers (80mm is ~80 width)
@@ -11,26 +12,47 @@ export const generateReceipt = ({ items, subtotal, discount, tax, total, transac
         format: 'a5'
     });
 
+    const { receiptLogo, receiptAddress, receiptFooter } = useSettingsStore.getState();
+
     const pageWidth = doc.internal.pageSize.getWidth();
     const storeName = "Inventor-E Store";
-    const storeAddress = "Generated via Inventor-E App";
+    const storeAddress = receiptAddress || "Generated via Inventor-E App";
 
-    // Header
+    // Header Structure
+    let currentY = 20;
+
+    if (receiptLogo) {
+        // Center the logo
+        const logoWidth = 30;
+        const logoHeight = 30; // Assuming square-ish logo
+        const logoX = (pageWidth - logoWidth) / 2;
+        doc.addImage(receiptLogo, 'JPEG', logoX, 10, logoWidth, logoHeight);
+        currentY = 46; // Push text down below the logo
+    }
+
     doc.setFontSize(20);
     doc.setFont("helvetica", "bold");
-    doc.text(storeName, pageWidth / 2, 20, { align: 'center' });
+    doc.text(storeName, pageWidth / 2, currentY, { align: 'center' });
     
+    currentY += 6;
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text(storeAddress, pageWidth / 2, 26, { align: 'center' });
+    
+    // Split address into multiple lines if needed
+    const splitAddress = doc.splitTextToSize(storeAddress, pageWidth - 20);
+    doc.text(splitAddress, pageWidth / 2, currentY, { align: 'center' });
+    currentY += (splitAddress.length * 5) + 5;
     
     // Receipt Details
     const date = new Date();
-    doc.text(`Date: ${date.toLocaleDateString()} ${date.toLocaleTimeString()}`, 10, 40);
-    doc.text(`Receipt #: ${transactionId || Math.random().toString(36).substring(2, 9).toUpperCase()}`, 10, 46);
+    doc.text(`Date: ${date.toLocaleDateString()} ${date.toLocaleTimeString()}`, 10, currentY);
+    currentY += 6;
+    doc.text(`Receipt #: ${transactionId || Math.random().toString(36).substring(2, 9).toUpperCase()}`, 10, currentY);
 
     // Items Header
-    doc.line(10, 52, pageWidth - 10, 52);
+    currentY += 6;
+    doc.line(10, currentY, pageWidth - 10, currentY);
+    currentY += 4;
 
     // Prep Table Data
     const tableData = items.map(item => [
@@ -41,7 +63,7 @@ export const generateReceipt = ({ items, subtotal, discount, tax, total, transac
 
     // Render Table
     autoTable(doc, {
-        startY: 56,
+        startY: currentY,
         head: [['Item', 'Qty x Price', 'Amount']],
         body: tableData,
         theme: 'plain',
@@ -64,7 +86,7 @@ export const generateReceipt = ({ items, subtotal, discount, tax, total, transac
     doc.text("Subtotal:", pageWidth - 50, finalY);
     doc.text(formatCurrency(subtotal), pageWidth - 10, finalY, { align: 'right' });
 
-    let currentY = finalY;
+    currentY = finalY;
 
     if (discount > 0) {
         currentY += 6;
@@ -85,10 +107,12 @@ export const generateReceipt = ({ items, subtotal, discount, tax, total, transac
     doc.text(formatCurrency(total), pageWidth - 10, currentY, { align: 'right' });
 
     // Footer
-    currentY += 20;
+    currentY += 15;
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text("Thank you for your purchase!", pageWidth / 2, currentY, { align: 'center' });
+    const footerText = receiptFooter || "Thank you for your purchase!";
+    const splitFooter = doc.splitTextToSize(footerText, pageWidth - 20);
+    doc.text(splitFooter, pageWidth / 2, currentY, { align: 'center' });
 
     // Output
     // For web use, we'll open it in a new tab/window for easy viewing or printing

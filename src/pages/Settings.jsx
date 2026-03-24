@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Moon, Sun, Type, Globe, ChevronRight, Users, Palette, Check, MessageSquare, Bell, LogOut, Store, ShieldCheck, Pencil, X, Trash2 } from 'lucide-react';
+import { Moon, Sun, Type, Globe, ChevronRight, Users, Palette, Check, MessageSquare, Bell, LogOut, Store, ShieldCheck, Pencil, X, Trash2, Printer, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useSettingsStore } from '../store/useSettingsStore';
@@ -14,7 +14,12 @@ export default function Settings() {
     const [isLanguageExpanded, setIsLanguageExpanded] = useState(false);
     const [isColorExpanded, setIsColorExpanded] = useState(false);
     const [isTextSizeExpanded, setIsTextSizeExpanded] = useState(false);
-    const { theme, language, textSize, color, pushNotifications, setTheme, setLanguage, setTextSize, setColor, setPushNotifications } = useSettingsStore();
+    const { 
+        theme, language, textSize, color, pushNotifications, 
+        receiptLogo, receiptAddress, receiptFooter,
+        setTheme, setLanguage, setTextSize, setColor, setPushNotifications,
+        setReceiptLogo, setReceiptAddress, setReceiptFooter 
+    } = useSettingsStore();
     const { currentTier, openPaywall, upgradeTier } = useSubscriptionStore();
     const { user, userRole, storeName, signOut, storeId, _loadStoreContext } = useAuthStore();
     const t = translations[language];
@@ -40,6 +45,37 @@ export default function Settings() {
             toast.error(language === 'en' ? 'Failed to save name.' : 'Gagal menyimpan nama.');
         }
         setNameSaving(false);
+    };
+
+    const handleLogoUpload = async (e) => {
+        if (currentTier === 'free') {
+            openPaywall('pro_feature_receipt');
+            return;
+        }
+        
+        const file = e.target.files[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            toast.error(language === 'en' ? 'Please upload a valid image file' : 'Harap unggah file gambar yang valid');
+            return;
+        }
+
+        try {
+            const toastId = toast.loading(language === 'en' ? 'Processing logo...' : 'Memproses logo...');
+            const imageCompression = (await import('browser-image-compression')).default;
+            const options = { maxSizeMB: 0.1, maxWidthOrHeight: 400, useWebWorker: true };
+            const compressedFile = await imageCompression(file, options);
+            
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setReceiptLogo(reader.result);
+                toast.success(language === 'en' ? 'Logo updated!' : 'Logo diperbarui!', { id: toastId });
+            };
+            reader.readAsDataURL(compressedFile);
+        } catch (error) {
+            console.error(error);
+            toast.error(language === 'en' ? 'Failed to process image' : 'Gagal memproses gambar');
+        }
     };
 
     // Self-heal: if user is logged in but storeId is still null, retry loading (8s timeout)
@@ -309,6 +345,70 @@ export default function Settings() {
                     onClick={handleTeamClick}
                     last={true}
                 />
+            </Section>
+
+            <Section title={language === 'en' ? 'Receipt Branding' : 'Merek Struk'}>
+                <div className="p-4 border-b border-border">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                                <Printer size={18} />
+                            </div>
+                            <span className="font-medium text-foreground">{language === 'en' ? 'Custom Receipt' : 'Struk Kustom'}</span>
+                        </div>
+                        {currentTier === 'free' && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-muted text-muted-foreground uppercase">
+                                PRO
+                            </span>
+                        )}
+                    </div>
+                    
+                    <div className={`space-y-4 ${currentTier === 'free' ? 'opacity-50 pointer-events-none' : ''}`} onClick={() => currentTier === 'free' && openPaywall('pro_feature_receipt')}>
+                        
+                        {/* Logo Upload */}
+                        <div>
+                            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">{language === 'en' ? 'Store Logo' : 'Logo Toko'}</label>
+                            <label className="flex items-center justify-center w-full h-24 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary/50 transition-colors bg-muted/20 relative overflow-hidden">
+                                {receiptLogo ? (
+                                    <img src={receiptLogo} className="h-full object-contain p-2" alt="Receipt Logo" />
+                                ) : (
+                                    <div className="flex flex-col items-center text-muted-foreground">
+                                        <Upload size={20} className="mb-2" />
+                                        <span className="text-sm">{language === 'en' ? 'Upload Logo' : 'Unggah Logo'}</span>
+                                    </div>
+                                )}
+                                <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} />
+                            </label>
+                            {receiptLogo && (
+                                <button onClick={() => setReceiptLogo(null)} className="text-xs text-red-500 mt-2 font-medium">Remove Logo</button>
+                            )}
+                        </div>
+
+                        {/* Store Address */}
+                        <div>
+                            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">{language === 'en' ? 'Store Address' : 'Alamat Toko'}</label>
+                            <textarea 
+                                value={receiptAddress}
+                                onChange={(e) => setReceiptAddress(e.target.value)}
+                                className="w-full bg-muted border border-border rounded-xl px-3 py-2 text-sm text-foreground outline-none focus:border-primary transition-colors resize-none"
+                                rows={2}
+                                placeholder={language === 'en' ? '123 Business Rd, City' : 'Jl. Bisnis 123, Kota'}
+                            />
+                        </div>
+
+                        {/* Footer Message */}
+                        <div>
+                            <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">{language === 'en' ? 'Footer Message' : 'Pesan Bawah'}</label>
+                            <textarea 
+                                value={receiptFooter}
+                                onChange={(e) => setReceiptFooter(e.target.value)}
+                                className="w-full bg-muted border border-border rounded-xl px-3 py-2 text-sm text-foreground outline-none focus:border-primary transition-colors resize-none"
+                                rows={2}
+                                placeholder={language === 'en' ? 'Thank you for shopping!\nIG: @mystore - Wifi: guest123' : 'Terima kasih telah berbelanja!\nIG: @mystore'}
+                            />
+                        </div>
+                    </div>
+                </div>
             </Section>
 
             <Section title={t.appearance}>

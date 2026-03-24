@@ -6,8 +6,10 @@ import { translations } from '../utils/translations';
 import InventoryCard from '../components/InventoryCard';
 import AddItemCard from '../components/AddItemCard';
 import SortFilterMenu from '../components/SortFilterMenu';
-import { Search, LayoutGrid, List as ListIcon, Plus, CheckSquare, Trash2, X, Settings2, ShoppingCart } from 'lucide-react';
-import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
+import { Search, LayoutGrid, List as ListIcon, Plus, CheckSquare, Trash2, X, Settings2, ShoppingCart, Upload, Download } from 'lucide-react';
+import { AnimatePresence, LayoutGroup } from 'framer-motion';
+import * as XLSX from 'xlsx';
+import { toast } from 'sonner';
 
 export default function Inventory() {
     const navigate = useNavigate();
@@ -58,6 +60,71 @@ export default function Inventory() {
         setShowDeleteConfirm(false);
     };
 
+    const handleExport = () => {
+        const dataToExport = items.map(item => ({
+            [language === 'en' ? 'Name' : 'Nama']: item.name,
+            [language === 'en' ? 'Category' : 'Kategori']: item.category || 'Uncategorized',
+            [language === 'en' ? 'Price' : 'Harga Jual']: item.price,
+            [language === 'en' ? 'Cost Price' : 'Harga Modal']: item.costPrice || 0,
+            [language === 'en' ? 'Stock' : 'Stok']: item.stock,
+            [language === 'en' ? 'Low Stock Alert' : 'Batas Stok Rendah']: item.lowStockThreshold || 5,
+            [language === 'en' ? 'Description' : 'Deskripsi']: item.description || ''
+        }));
+        
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Inventory");
+        XLSX.writeFile(workbook, `Inventory_${new Date().toISOString().split('T')[0]}.xlsx`);
+        
+        toast.success(language === 'en' ? 'Inventory exported successfully' : 'Inventaris berhasil diekspor');
+    };
+
+    const handleFileUpload = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            try {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const json = XLSX.utils.sheet_to_json(worksheet);
+
+                if (json.length === 0) {
+                    toast.error(language === 'en' ? 'File is empty' : 'File kosong');
+                    return;
+                }
+
+                // Map standard columns back
+                const mappedItems = json.map(row => ({
+                    name: row['Name'] || row['Nama'] || 'Unnamed Item',
+                    category: row['Category'] || row['Kategori'] || 'Uncategorized',
+                    price: parseFloat(row['Price'] || row['Harga Jual']) || 0,
+                    costPrice: parseFloat(row['Cost Price'] || row['Harga Modal']) || 0,
+                    stock: parseInt(row['Stock'] || row['Stok']) || 0,
+                    lowStockThreshold: parseInt(row['Low Stock Alert'] || row['Batas Stok Rendah']) || 5,
+                    description: row['Description'] || row['Deskripsi'] || ''
+                }));
+
+                const { bulkAddItems } = useInventoryStore.getState();
+                toast.promise(bulkAddItems(mappedItems), {
+                    loading: language === 'en' ? 'Importing items...' : 'Mengimpor barang...',
+                    success: language === 'en' ? `Successfully imported ${mappedItems.length} items` : `Berhasil mengimpor ${mappedItems.length} barang`,
+                    error: language === 'en' ? 'Failed to import items' : 'Gagal mengimpor barang',
+                });
+                
+            } catch (err) {
+                console.error(err);
+                toast.error(language === 'en' ? 'Failed to parse file' : 'Gagal membaca file');
+            }
+        };
+        reader.readAsArrayBuffer(file);
+        // Reset file input value
+        e.target.value = null;
+    };
+
     return (
         <div className="pb-32">
             {/* Sticky Header */}
@@ -86,13 +153,31 @@ export default function Inventory() {
                             />
 
                             {globalMode === 'manage' && (
-                                <button
-                                    onClick={toggleSelectionMode}
-                                    className={`p-1.5 sm:p-2 rounded-full border border-border hover:shadow-md transition-all active:scale-90 shrink-0 ${isSelectionMode ? 'bg-primary text-white border-primary' : 'text-muted-foreground hover:text-foreground'}`}
-                                    title={t.selectItems}
-                                >
-                                    <CheckSquare size={16} />
-                                </button>
+                                <>
+                                    <button
+                                        onClick={handleExport}
+                                        className="p-1.5 sm:p-2 rounded-full border border-border hover:shadow-md transition-all active:scale-90 shrink-0 text-muted-foreground hover:text-foreground hidden sm:block"
+                                        title={language === 'en' ? 'Export CSV' : 'Ekspor CSV'}
+                                    >
+                                        <Download size={16} />
+                                    </button>
+                                    
+                                    <label
+                                        className="p-1.5 sm:p-2 rounded-full border border-border hover:shadow-md transition-all active:scale-90 shrink-0 text-muted-foreground hover:text-foreground cursor-pointer hidden sm:block"
+                                        title={language === 'en' ? 'Import CSV' : 'Impor CSV'}
+                                    >
+                                        <Upload size={16} />
+                                        <input type="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" className="hidden" onChange={handleFileUpload} />
+                                    </label>
+
+                                    <button
+                                        onClick={toggleSelectionMode}
+                                        className={`p-1.5 sm:p-2 rounded-full border border-border hover:shadow-md transition-all active:scale-90 shrink-0 ${isSelectionMode ? 'bg-primary text-white border-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                                        title={t.selectItems}
+                                    >
+                                        <CheckSquare size={16} />
+                                    </button>
+                                </>
                             )}
 
                             <SortFilterMenu t={t} />

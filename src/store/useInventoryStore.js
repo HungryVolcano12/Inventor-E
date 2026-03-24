@@ -109,6 +109,30 @@ export const useInventoryStore = create((set, get) => ({
         return data;
     },
 
+    bulkAddItems: async (itemsArray) => {
+        const { storeId } = useAuthStore.getState();
+        if (!storeId || !itemsArray || itemsArray.length === 0) return;
+        
+        // Process sequentially to avoid DB overload and track completions
+        for (const item of itemsArray) {
+            const { error } = await supabase.rpc('insert_store_item', {
+                p_store_id: storeId,
+                p_name: item.name,
+                p_category: item.category || 'Uncategorized',
+                p_price: parseFloat(item.price) || 0,
+                p_cost_price: parseFloat(item.costPrice) || 0,
+                p_stock: parseInt(item.stock) || 0,
+                p_low_stock: parseInt(item.lowStockThreshold) || 5,
+                p_desc: item.description || '',
+                p_image: item.image || ''
+            });
+            if (error) console.error("Bulk add error for item:", item.name, error);
+        }
+        
+        // Reload all data after bulk import to get proper generated IDs
+        await get().loadData();
+    },
+
     updateItem: async (id, updatedItem) => {
         const dbPayload = {};
         if (updatedItem.name !== undefined) dbPayload.name = updatedItem.name;

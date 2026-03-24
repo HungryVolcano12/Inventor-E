@@ -128,8 +128,11 @@ export default function AddItemSheet({ isOpen, onClose }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Freemium limit check
-        if (items.length >= 50 && currentTier === 'free') {
+        // Capacity Limit Check
+        const itemLimits = { free: 50, pro: 1000, business: Infinity };
+        const maxItems = itemLimits[currentTier] || 50;
+
+        if (items.length >= maxItems) {
             onClose();
             openPaywall('item_limit_reached');
             return;

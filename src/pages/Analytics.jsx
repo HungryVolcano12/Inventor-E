@@ -4,9 +4,13 @@ import { useInventoryStore } from '../store/useInventoryStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { translations } from '../utils/translations';
 import { AlertTriangle, TrendingUp, ChevronDown, Check, HelpCircle, X, Pencil, Download, FileText, Table, Archive } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { formatCurrency } from '../utils/currency';
 import { exportToPDF, exportToExcel } from '../utils/exportData';
+import { 
+    AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, 
+    BarChart, Bar, CartesianGrid, Cell
+} from 'recharts';
 
 export default function Analytics() {
     const navigate = useNavigate();
@@ -60,14 +64,16 @@ export default function Analytics() {
     const getStartDate = () => {
         const now = getStartOfDay();
         switch (timeRange) {
-            case '7days':
+            case '7days': {
                 const d7 = new Date(now);
                 d7.setDate(d7.getDate() - 6);
                 return d7;
-            case '30days':
+            }
+            case '30days': {
                 const d30 = new Date(now);
                 d30.setDate(d30.getDate() - 29);
                 return d30;
+            }
             case 'all':
                 return new Date(0); // Beginning of time
             case 'today':
@@ -159,8 +165,6 @@ export default function Analytics() {
             revenue: dayRevenue
         };
     });
-
-    const maxRevenue = Math.max(...revenueData.map(d => d.revenue), 1);
 
     const getDeadStock = useInventoryStore((state) => state.getDeadStock);
     const lowStockList = items.filter(item => item.stock <= (item.lowStockThreshold || 5) && item.stock > 0);
@@ -406,57 +410,110 @@ export default function Analytics() {
 
             {/* Revenue Chart */}
             {(timeRange !== 'today' || chartDays.length > 1) && (
-                <div className="mb-8">
+                <div className="mb-8 p-5 bg-card rounded-2xl border border-border">
                     <h3 className="font-bold text-lg mb-4 text-foreground">Revenue Trend</h3>
-                    <div className="h-40 flex items-end justify-between gap-1 p-4 bg-card rounded-2xl border border-border overflow-x-auto">
-                        {revenueData.map((day, i) => (
-                            <div key={i} className="flex flex-col items-center gap-2 flex-1 group min-w-[30px]">
-                                <div className="w-full relative flex items-end h-32 bg-muted/50 rounded-lg overflow-hidden">
-                                    <motion.div
-                                        initial={{ height: 0 }}
-                                        animate={{ height: `${(day.revenue / maxRevenue) * 100}%` }}
-                                        transition={{ duration: 0.5, delay: i * 0.05 }}
-                                        className="w-full bg-primary rounded-t-lg group-hover:bg-primary/80 transition-colors relative"
-                                    >
-                                        {day.revenue > 0 && (
-                                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                                                {formatCurrency(day.revenue)}
-                                            </div>
-                                        )}
-                                    </motion.div>
-                                </div>
-                                <span className="text-[10px] text-muted-foreground font-medium whitespace-nowrap overflow-hidden text-ellipsis w-full text-center">{day.date}</span>
-                            </div>
-                        ))}
+                    <div className="h-64 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={revenueData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
+                                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                                <XAxis 
+                                    dataKey="date" 
+                                    axisLine={false} 
+                                    tickLine={false} 
+                                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} 
+                                    dy={10}
+                                />
+                                <YAxis 
+                                    axisLine={false} 
+                                    tickLine={false} 
+                                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                                    tickFormatter={(val) => `Rp${(val / 1000)}k`}
+                                />
+                                <Tooltip 
+                                    contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '12px', border: '1px solid hsl(var(--border))' }}
+                                    formatter={(value) => [formatCurrency(value), 'Revenue']}
+                                    labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 'bold', marginBottom: '4px' }}
+                                />
+                                <Area 
+                                    type="monotone" 
+                                    dataKey="revenue" 
+                                    stroke="#8b5cf6" 
+                                    strokeWidth={3}
+                                    fillOpacity={1} 
+                                    fill="url(#colorRevenue)" 
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
             )}
 
             {/* Top Selling */}
-            <div className="mb-8">
-                <h3 className="font-bold text-lg mb-4 text-foreground flex items-center gap-2">
+            <div className="mb-8 p-5 bg-card rounded-2xl border border-border">
+                <h3 className="font-bold text-lg mb-6 text-foreground flex items-center gap-2">
                     <TrendingUp size={20} className="text-green-500" />
                     {t.topSelling}
                 </h3>
-                <div className="space-y-3">
+                <div className="space-y-6">
                     {topSelling.length > 0 ? (
-                        topSelling.map((item, index) => (
-                            <div key={index} className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border">
-                                <div className="w-12 h-12 rounded-lg bg-muted overflow-hidden shrink-0">
-                                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <h4 className="font-semibold text-foreground text-sm truncate">{item.name}</h4>
-                                    <p className="text-xs text-muted-foreground">{formatCurrency(item.totalQty * item.price)} revenue</p>
-                                </div>
-                                <div className="text-right">
-                                    <span className="block font-bold text-lg text-foreground">{item.totalQty}</span>
-                                    <span className="text-[10px] text-muted-foreground font-medium uppercase">{t.soldInfo}</span>
-                                </div>
+                        <>
+                            <div className="h-56 w-full -ml-4">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={topSelling} layout="vertical" margin={{ top: 0, right: 30, left: 20, bottom: 0 }} barSize={32}>
+                                        <XAxis type="number" hide />
+                                        <YAxis 
+                                            type="category" 
+                                            dataKey="name" 
+                                            axisLine={false} 
+                                            tickLine={false} 
+                                            tick={{ fill: 'hsl(var(--foreground))', fontSize: 13, fontWeight: 600 }}
+                                            width={100}
+                                        />
+                                        <Tooltip 
+                                            cursor={{fill: 'hsl(var(--muted))'}}
+                                            contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '12px', border: '1px solid hsl(var(--border))' }}
+                                            labelStyle={{ display: 'none' }}
+                                            formatter={(value, name, props) => [`${value} units`, props.payload.name]}
+                                        />
+                                        <Bar dataKey="totalQty" radius={[0, 6, 6, 0]}>
+                                            {topSelling.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={['#10b981', '#3b82f6', '#8b5cf6'][index % 3]} />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
                             </div>
-                        ))
+                            
+                            <div className="space-y-3 pt-4 border-t border-border border-dashed">
+                                {topSelling.map((item, index) => (
+                                    <div key={index} className="flex items-center gap-4 p-4 bg-muted/30 rounded-xl border border-border transition-colors hover:bg-muted/50">
+                                        <div className="w-12 h-12 rounded-lg border border-border bg-white overflow-hidden shrink-0">
+                                            {item.image ? (
+                                                <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground text-xs">{item.name.substring(0, 2)}</div>
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="font-semibold text-foreground text-sm truncate">{item.name}</h4>
+                                            <p className="text-xs text-muted-foreground">{formatCurrency(item.totalQty * item.price)} revenue</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <span className="block font-bold text-lg text-foreground">{item.totalQty}</span>
+                                            <span className="text-[10px] text-muted-foreground font-medium uppercase">{t.soldInfo || 'Sold'}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
                     ) : (
-                        <div className="p-6 text-center text-gray-400 text-sm bg-gray-50 rounded-xl">
+                        <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-xl border border-border border-dashed">
                             {language === 'en' ? 'No sales yet. Start selling!' : 'Belum ada penjualan. Mulai menjual!'}
                         </div>
                     )}

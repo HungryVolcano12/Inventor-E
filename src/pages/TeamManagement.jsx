@@ -18,7 +18,7 @@ export default function TeamManagement() {
     // Define limits based on tier
     const teamLimits = {
         free: 1,
-        pro: 3,
+        pro: 4, // 1 owner + 3 staff
         business: 'Unlimited'
     };
 
