@@ -4,7 +4,7 @@ import { useInventoryStore } from '../store/useInventoryStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { translations } from '../utils/translations';
 import { AlertTriangle, TrendingUp, ChevronDown, Check, HelpCircle, X, Pencil, Download, FileText, Table, Archive } from 'lucide-react';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { formatCurrency } from '../utils/currency';
 import { exportToPDF, exportToExcel } from '../utils/exportData';
 import { 
