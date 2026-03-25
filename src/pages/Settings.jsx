@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Moon, Sun, Type, Globe, ChevronRight, Users, Palette, Check, MessageSquare, Bell, LogOut, Store, ShieldCheck, Pencil, X, Trash2, Printer, Upload } from 'lucide-react';
+import { Moon, Sun, Type, Globe, ChevronRight, Users, Palette, Check, MessageSquare, Bell, LogOut, Store, ShieldCheck, Pencil, X, Trash2, Printer, Upload, Star, Truck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useSettingsStore } from '../store/useSettingsStore';
@@ -341,8 +341,34 @@ export default function Settings() {
                 <Row
                     icon={Users}
                     label={t.teamManagement}
-                    value={currentTier === 'free' ? t.upgradeRequired : t.manage}
+                    value={currentTier === 'free' ? t.upgradeRequired : (t.manage || 'Manage')}
                     onClick={handleTeamClick}
+                    last={false}
+                />
+                <Row
+                    icon={Star}
+                    label={language === 'en' ? 'Customers & Loyalty' : 'Pelanggan & Loyalitas'}
+                    value={currentTier !== 'business' ? (t.upgradeRequired || 'Upgrade Required') : (t.manage || 'Manage')}
+                    onClick={() => {
+                        if (currentTier !== 'business') {
+                            openPaywall('pro_feature_loyalty');
+                        } else {
+                            navigate('/customers');
+                        }
+                    }}
+                    last={false}
+                />
+                <Row
+                    icon={Truck}
+                    label={language === 'en' ? 'Suppliers' : 'Pemasok'}
+                    value={currentTier !== 'business' ? (t.upgradeRequired || 'Upgrade Required') : (t.manage || 'Manage')}
+                    onClick={() => {
+                        if (currentTier !== 'business') {
+                            openPaywall('pro_feature_supplier');
+                        } else {
+                            navigate('/suppliers');
+                        }
+                    }}
                     last={true}
                 />
             </Section>

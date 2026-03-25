@@ -10,14 +10,21 @@ import Settings from './pages/Settings';
 import TeamManagement from './pages/TeamManagement';
 import Auth from './pages/Auth';
 import JoinStore from './pages/JoinStore';
+import Customers from './pages/Customers';
+import Suppliers from './pages/Suppliers';
 import { useSettingsStore } from './store/useSettingsStore';
 import { useAuthStore } from './store/useAuthStore';
 import { useInventoryStore } from './store/useInventoryStore';
+import { useShiftStore } from './store/useShiftStore';
+import { useCustomerStore } from './store/useCustomerStore';
 
 function App() {
   const { theme, textSize, color } = useSettingsStore();
   const { user, storeId, loading, initialize } = useAuthStore();
   const { loadData } = useInventoryStore();
+  const { fetchCurrentShift } = useShiftStore();
+  const { fetchCustomers } = useCustomerStore();
+  // We don't fetch suppliers immediately here since Suppliers.jsx fetches them on mount, but we could. 
 
   useEffect(() => {
     initialize();
@@ -27,6 +34,8 @@ function App() {
     // Only fetch data after BOTH the store ID and user authentication session are fully restored
     if (storeId && user?.id) {
       loadData();
+      fetchCurrentShift();
+      fetchCustomers();
     }
   }, [storeId, user?.id]);
 
@@ -85,6 +94,8 @@ function App() {
           <Route path="inventory/:id" element={<ItemDetails />} />
           <Route path="inventory/edit/:id" element={<EditItem />} />
           <Route path="analytics" element={<Analytics />} />
+          <Route path="customers" element={<Customers />} />
+          <Route path="suppliers" element={<Suppliers />} />
           <Route path="profile" element={<Settings />} />
           <Route path="team" element={<TeamManagement />} />
         </Route>

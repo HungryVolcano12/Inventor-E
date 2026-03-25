@@ -14,8 +14,8 @@ export default function EditItem() {
     const navigate = useNavigate();
     const { items, updateItem, addCategory, customCategories } = useInventoryStore();
     const { language } = useSettingsStore();
-    const { isOwner } = useAuthStore();
-    const ownerOnly = isOwner();
+    const { isManager } = useAuthStore();
+    const managerOnly = isManager();
     const t = translations[language];
     const fileInputRef = useRef(null);
     const existingItem = items.find(i => i.id === id);
@@ -245,7 +245,7 @@ export default function EditItem() {
                                 />
                             </div>
                         </div>
-                        {ownerOnly && (
+                        {managerOnly && (
                         <div>
                             <label className="block text-sm font-medium text-foreground mb-1">{t.costPrice}</label>
                             <div className="relative">

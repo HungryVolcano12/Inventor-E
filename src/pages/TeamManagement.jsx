@@ -53,7 +53,8 @@ export default function TeamManagement() {
 
     // UI States for Modals
     const [editingMember, setEditingMember] = useState(null);
-    const [editEmail, setEditEmail] = useState('');
+    const [editRole, setEditRole] = useState('staff');
+    const [isSavingRole, setIsSavingRole] = useState(false);
 
     const [isInviteOpen, setIsInviteOpen] = useState(false);
     const [inviteLink, setInviteLink] = useState('');
@@ -63,16 +64,32 @@ export default function TeamManagement() {
 
     // Handlers
     const openEditModal = (member) => {
+        if (member.role === 'owner') return; // Cannot edit owner
         setEditingMember(member);
-        setEditEmail(member.email);
+        setEditRole(member.role || 'staff');
     };
 
-    const handleSaveEdit = (e) => {
+    const handleSaveEdit = async (e) => {
         e.preventDefault();
-        setTeamMembers(teamMembers.map(m =>
-            m.id === editingMember.id ? { ...m, email: editEmail } : m
-        ));
-        setEditingMember(null);
+        setIsSavingRole(true);
+        try {
+            const { error } = await supabase
+                .from('store_members')
+                .update({ role: editRole })
+                .eq('id', editingMember.id)
+                .eq('store_id', storeId);
+            
+            if (error) throw error;
+            
+            // Re-fetch members to reflect changes properly
+            await fetchMembers();
+            setEditingMember(null);
+        } catch (err) {
+            console.error('Failed to update role:', err);
+            alert('Failed to update role. Minimum tier limits may apply or permission denied.');
+        } finally {
+            setIsSavingRole(false);
+        }
     };
 
     const handleGenerateLink = async () => {
@@ -201,15 +218,17 @@ export default function TeamManagement() {
                             </div>
                         </div>
                         <div className="flex items-center gap-3 relative">
-                            <span className="text-xs font-medium px-2.5 py-1 rounded-md bg-muted text-muted-foreground">
+                            <span className="text-xs font-medium px-2.5 py-1 rounded-md bg-muted text-muted-foreground uppercase tracking-wider">
                                 {member.role}
                             </span>
-                            <button
-                                onClick={() => openEditModal(member)}
-                                className="p-2 text-muted-foreground hover:text-foreground transition-colors"
-                            >
-                                <MoreVertical size={16} />
-                            </button>
+                            {member.role !== 'owner' && (
+                                <button
+                                    onClick={() => openEditModal(member)}
+                                    className="p-2 text-muted-foreground hover:text-foreground transition-colors outline-none"
+                                >
+                                    <MoreVertical size={16} />
+                                </button>
+                            )}
                         </div>
                     </div>
                 ))}
@@ -250,28 +269,43 @@ export default function TeamManagement() {
 
                             <form onSubmit={handleSaveEdit}>
                                 <div className="mb-6">
-                                    <label className="block text-sm font-medium text-muted-foreground mb-2">{t.memberName}</label>
+                                    <label className="block text-sm font-medium text-muted-foreground mb-2">{t.memberName} / {t.loginEmail}</label>
                                     <input
                                         type="text"
                                         disabled
-                                        value={editingMember.name}
+                                        value={editingMember.email}
                                         className="w-full p-3 rounded-xl bg-muted/50 text-muted-foreground border-none outline-none cursor-not-allowed"
                                     />
-                                    <p className="text-xs text-muted-foreground mt-2">{t.changeNameInfo}</p>
                                 </div>
                                 <div className="mb-8">
-                                    <label className="block text-sm font-medium text-foreground mb-2">{t.loginEmail}</label>
-                                    <input
-                                        type="email"
-                                        required
-                                        value={editEmail}
-                                        onChange={(e) => setEditEmail(e.target.value)}
-                                        className="w-full p-3 rounded-xl border border-primary text-foreground bg-transparent focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                                    />
+                                    <label className="block text-sm font-medium text-foreground mb-2">Assign Role</label>
+                                    <select
+                                        value={editRole}
+                                        onChange={(e) => setEditRole(e.target.value)}
+                                        className="w-full p-3 rounded-xl border border-border bg-transparent focus:border-primary text-foreground outline-none transition-all appearance-none"
+                                    >
+                                        <option value="staff" className="bg-background text-foreground">Staff (Default)</option>
+                                        {currentTier === 'business' && (
+                                            <>
+                                                <option value="manager" className="bg-background text-foreground">Manager (Refunds, Discounts)</option>
+                                                <option value="cashier" className="bg-background text-foreground">Cashier (Sales Only)</option>
+                                            </>
+                                        )}
+                                    </select>
+                                    {currentTier !== 'business' && (
+                                        <p className="text-xs text-primary mt-2 flex items-center gap-1 font-medium">
+                                            <Shield size={12} />
+                                            Upgrade to Business to unlock Manager & Cashier roles.
+                                        </p>
+                                    )}
                                 </div>
 
-                                <button type="submit" className="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-primary/90 transition-colors">
-                                    {t.saveChanges}
+                                <button 
+                                    type="submit" 
+                                    disabled={isSavingRole}
+                                    className="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-70 flex justify-center"
+                                >
+                                    {isSavingRole ? <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin"/> : t.saveChanges}
                                 </button>
                             </form>
                         </motion.div>

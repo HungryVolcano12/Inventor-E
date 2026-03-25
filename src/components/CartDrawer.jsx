@@ -15,8 +15,11 @@ import {
 } from 'lucide-react';
 import { useCartStore } from '../store/useCartStore';
 import { useAuthStore } from '../store/useAuthStore';
+import { useShiftStore } from '../store/useShiftStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useInventoryStore } from '../store/useInventoryStore';
+import { useSubscriptionStore } from '../store/useSubscriptionStore';
+import { useCustomerStore } from '../store/useCustomerStore';
 import { formatCurrency } from '../utils/currency';
 import { translations } from '../utils/translations';
 import { generateReceipt } from '../utils/receiptGenerator';
@@ -47,11 +50,14 @@ export default function CartDrawer() {
 
     const { updateItem, addTransaction } = useInventoryStore();
     const { storeName } = useAuthStore();
+    const { currentTier } = useSubscriptionStore();
+    const { customers, recordCustomerPurchase } = useCustomerStore();
 
     // Local states
     const [completedSale, setCompletedSale] = useState(null);
     const [localTax, setLocalTax] = useState(taxRate);
     const [localDiscount, setLocalDiscount] = useState(discountValue);
+    const [selectedCustomerId, setSelectedCustomerId] = useState('');
 
     const handleTaxChange = (e) => {
         const val = parseFloat(e.target.value) || 0;
@@ -68,6 +74,7 @@ export default function CartDrawer() {
     React.useEffect(() => {
         if (!isOpen) {
             setCompletedSale(null);
+            setSelectedCustomerId('');
         }
     }, [isOpen]);
 
@@ -88,7 +95,8 @@ export default function CartDrawer() {
                 type: 'SALE',
                 quantity: item.cartQuantity,
                 price: item.price,
-                cost: item.cost || 0
+                cost: item.cost || 0,
+                customer_id: selectedCustomerId || null
             });
         });
 
@@ -99,8 +107,19 @@ export default function CartDrawer() {
             tax: getTaxAmount(),
             total: getTotal(),
             transactionId,
-            date: new Date()
+            date: new Date(),
+            customer_id: selectedCustomerId || null
         };
+
+        // If Customer is selected, add loyalty points
+        if (selectedCustomerId) {
+            // E.g. 1 point for every 10,000 spent
+            const pointsEarned = Math.floor(newSale.total / 10000);
+            recordCustomerPurchase(selectedCustomerId, newSale.total, pointsEarned);
+        }
+
+        // Update shift expected cash
+        useShiftStore.getState().updateExpectedCash(newSale.total);
 
         setCompletedSale(newSale);
         clearCart();
@@ -347,6 +366,24 @@ export default function CartDrawer() {
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Customer Selection (Business Plan Only) */}
+                                {currentTier === 'business' && (
+                                    <div className="pt-2">
+                                        <select
+                                            value={selectedCustomerId}
+                                            onChange={(e) => setSelectedCustomerId(e.target.value)}
+                                            className="w-full text-sm bg-background border border-border rounded-xl px-3 py-2 outline-none focus:border-primary text-foreground appearance-none"
+                                        >
+                                            <option value="">-- No Customer Selected --</option>
+                                            {customers.map(c => (
+                                                <option key={c.id} value={c.id}>
+                                                    {c.name} {c.phone ? `(${c.phone})` : ''} - {c.points} pts
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
 
                                 {/* Summary */}
                                 <div className="space-y-2 pt-2 border-t border-border border-dashed">

@@ -13,8 +13,8 @@ export default function AddItemSheet({ isOpen, onClose }) {
     const { addItem, items, customCategories, addCategory } = useInventoryStore();
     const { currentTier, openPaywall } = useSubscriptionStore();
     const { language } = useSettingsStore();
-    const { isOwner } = useAuthStore();
-    const ownerOnly = isOwner();
+    const { isManager } = useAuthStore();
+    const managerOnly = isManager();
     const t = translations[language];
     const fileInputRef = useRef(null);
 
@@ -262,7 +262,7 @@ export default function AddItemSheet({ isOpen, onClose }) {
                                             />
                                         </div>
                                     </div>
-                                    {ownerOnly && (
+                                    {managerOnly && (
                                     <div>
                                         <label className="block text-sm font-medium text-muted-foreground mb-1">{t.costPrice}</label>
                                         <div className="relative">

@@ -2,7 +2,11 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useInventoryStore } from '../store/useInventoryStore';
 import { useSettingsStore } from '../store/useSettingsStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { useShiftStore } from '../store/useShiftStore';
+import { useSubscriptionStore } from '../store/useSubscriptionStore';
 import { translations } from '../utils/translations';
+import ShiftModal from '../components/ShiftModal';
 import InventoryCard from '../components/InventoryCard';
 import AddItemCard from '../components/AddItemCard';
 import SortFilterMenu from '../components/SortFilterMenu';
@@ -16,11 +20,19 @@ export default function Inventory() {
     const { items, getFilteredItems, setSearchQuery, deleteItem, deleteItems, customCategories, addCategory } = useInventoryStore();
     const { language } = useSettingsStore();
     const t = translations[language];
+    const { isManager, isCashier } = useAuthStore();
 
     const filteredItems = getFilteredItems();
     const [activeCategory, setActiveCategory] = useState('All');
     const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
     const [globalMode, setGlobalMode] = useState('pos'); // 'pos' | 'manage'
+
+    const { currentShift } = useShiftStore();
+    const { currentTier } = useSubscriptionStore();
+    const [isShiftModalOpen, setIsShiftModalOpen] = useState(false);
+
+    const requireShift = currentTier === 'business' && globalMode === 'pos';
+    const isRegisterOpen = !!currentShift;
 
     // Selection Mode State
     const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -154,21 +166,25 @@ export default function Inventory() {
 
                             {globalMode === 'manage' && (
                                 <>
-                                    <button
-                                        onClick={handleExport}
-                                        className="p-1.5 sm:p-2 rounded-full border border-border hover:shadow-md transition-all active:scale-90 shrink-0 text-muted-foreground hover:text-foreground hidden sm:block"
-                                        title={language === 'en' ? 'Export CSV' : 'Ekspor CSV'}
-                                    >
-                                        <Download size={16} />
-                                    </button>
-                                    
-                                    <label
-                                        className="p-1.5 sm:p-2 rounded-full border border-border hover:shadow-md transition-all active:scale-90 shrink-0 text-muted-foreground hover:text-foreground cursor-pointer hidden sm:block"
-                                        title={language === 'en' ? 'Import CSV' : 'Impor CSV'}
-                                    >
-                                        <Upload size={16} />
-                                        <input type="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" className="hidden" onChange={handleFileUpload} />
-                                    </label>
+                                    {isManager() && (
+                                        <>
+                                            <button
+                                                onClick={handleExport}
+                                                className="p-1.5 sm:p-2 rounded-full border border-border hover:shadow-md transition-all active:scale-90 shrink-0 text-muted-foreground hover:text-foreground hidden sm:block"
+                                                title={language === 'en' ? 'Export CSV' : 'Ekspor CSV'}
+                                            >
+                                                <Download size={16} />
+                                            </button>
+                                            
+                                            <label
+                                                className="p-1.5 sm:p-2 rounded-full border border-border hover:shadow-md transition-all active:scale-90 shrink-0 text-muted-foreground hover:text-foreground cursor-pointer hidden sm:block"
+                                                title={language === 'en' ? 'Import CSV' : 'Impor CSV'}
+                                            >
+                                                <Upload size={16} />
+                                                <input type="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" className="hidden" onChange={handleFileUpload} />
+                                            </label>
+                                        </>
+                                    )}
 
                                     <button
                                         onClick={toggleSelectionMode}
@@ -204,13 +220,23 @@ export default function Inventory() {
                                 <ShoppingCart size={16} />
                                 POS Mode
                             </button>
-                            <button
-                                onClick={() => setGlobalMode('manage')}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${globalMode === 'manage' ? 'bg-background shadow-sm text-foreground font-bold' : 'text-muted-foreground hover:text-foreground'}`}
-                            >
-                                <Settings2 size={16} />
-                                Edit Items
-                            </button>
+                            {requireShift && isRegisterOpen && (
+                                <button
+                                    onClick={() => setIsShiftModalOpen(true)}
+                                    className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+                                >
+                                    Close Register
+                                </button>
+                            )}
+                            {!isCashier() && (
+                                <button
+                                    onClick={() => setGlobalMode('manage')}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${globalMode === 'manage' ? 'bg-background shadow-sm text-foreground font-bold' : 'text-muted-foreground hover:text-foreground'}`}
+                                >
+                                    <Settings2 size={16} />
+                                    Edit Items
+                                </button>
+                            )}
                         </div>
                     </div>
                 )}
@@ -342,6 +368,12 @@ export default function Inventory() {
                     </div>
                 )}
             </AnimatePresence>
+
+            <ShiftModal 
+                isOpen={(requireShift && !isRegisterOpen) || isShiftModalOpen} 
+                mode={requireShift && !isRegisterOpen ? 'open' : 'close'}
+                onClose={() => setIsShiftModalOpen(false)}
+            />
         </div>
     );
 }

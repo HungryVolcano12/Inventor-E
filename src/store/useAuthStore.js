@@ -10,7 +10,7 @@ export const useAuthStore = create(
     session: null,
     loading: true,
     storeId: null,
-    userRole: null, // 'owner' | 'staff'
+    userRole: null, // 'owner' | 'manager' | 'staff' | 'cashier'
     storeName: null,
 
     initialize: async () => {
@@ -146,6 +146,8 @@ export const useAuthStore = create(
     },
 
     isOwner: () => get().userRole === 'owner',
+    isManager: () => ['owner', 'manager'].includes(get().userRole),
+    isCashier: () => get().userRole === 'cashier',
         }),
         {
             name: 'auth-store-context',

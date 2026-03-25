@@ -197,16 +197,32 @@ export const useInventoryStore = create((set, get) => ({
     addTransaction: async (transaction) => {
         const { storeId } = useAuthStore.getState();
         if (!storeId) return;
-        const { error } = await supabase.rpc('insert_store_transaction', {
-            p_store_id: storeId,
-            p_item_id: transaction.itemId,
-            p_item_name: transaction.itemName,
-            p_type: transaction.type || 'SALE',
-            p_quantity: parseInt(transaction.quantity) || 0,
-            p_price: parseFloat(transaction.price) || 0,
-            p_total: parseFloat(transaction.total) || parseFloat(transaction.price) * parseInt(transaction.quantity) || 0
-        });
+        
+        const payload = {
+            store_id: storeId,
+            item_id: transaction.itemId,
+            item_name: transaction.itemName,
+            type: transaction.type || 'SALE',
+            quantity: parseInt(transaction.quantity) || 0,
+            price: parseFloat(transaction.price) || 0,
+            total: parseFloat(transaction.total) || parseFloat(transaction.price) * parseInt(transaction.quantity) || 0,
+            cost: parseFloat(transaction.cost) || 0,
+        };
+
+        const stateUser = useAuthStore.getState().user;
+        if (stateUser) {
+            payload.cashier_name = stateUser.user_metadata?.full_name || stateUser.email || 'Unknown';
+        }
+
+        if (transaction.customer_id) {
+            payload.customer_id = transaction.customer_id;
+        }
+
+        const { error, data } = await supabase.from('transactions').insert(payload).select().single();
         if (error) throw error;
+        
+        // Optimistic update
+        set(state => ({ transactions: [mapTxFromDB(data || payload), ...state.transactions] }));
     },
 
     getFilteredItems: () => {
@@ -262,7 +278,7 @@ function mapItemFromDB(row) {
 
 function mapTxFromDB(row) {
     return {
-        id: row.id,
+        id: row.id || crypto.randomUUID(),
         itemId: row.item_id,
         itemName: row.item_name,
         type: row.type,
@@ -270,6 +286,7 @@ function mapTxFromDB(row) {
         price: row.price || 0,
         cost: row.cost || 0,
         total: row.total || 0,
-        date: row.date,
+        cashierName: row.cashier_name || 'Unknown',
+        date: row.date || new Date().toISOString(),
     };
 }
