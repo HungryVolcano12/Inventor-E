@@ -9,6 +9,40 @@ import { useAuthStore } from '../store/useAuthStore';
 import { supabase } from '../lib/supabase';
 import { translations } from '../utils/translations';
 
+// FIX #16: Defined outside Settings() to prevent re-mount on every render
+const Section = ({ title, children }) => (
+    <div className="mb-8">
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 px-2">{title}</h3>
+        <div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
+            {children}
+        </div>
+    </div>
+);
+
+const Row = ({ icon: Icon, label, value, onClick, last }) => (
+    <div
+        onClick={onClick}
+        className={`flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors ${!last ? 'border-b border-border' : ''}`}
+    >
+        <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
+                <Icon size={18} />
+            </div>
+            <span className="font-medium text-foreground">{label}</span>
+        </div>
+        <div className="flex items-center gap-2 text-muted-foreground">
+            {typeof value === 'string' ? (
+                <>
+                    <span className="text-sm">{value}</span>
+                    <ChevronRight size={16} />
+                </>
+            ) : (
+                value
+            )}
+        </div>
+    </div>
+);
+
 export default function Settings() {
     const navigate = useNavigate();
     const [isLanguageExpanded, setIsLanguageExpanded] = useState(false);
@@ -118,39 +152,6 @@ export default function Settings() {
     const maxSeats = teamLimits[currentTier] || 1;
     const ownerMember = storeMembers.find(m => m.role === 'owner');
     const staffMembers = storeMembers.filter(m => m.role !== 'owner');
-
-    const Section = ({ title, children }) => (
-        <div className="mb-8">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4 px-2">{title}</h3>
-            <div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
-                {children}
-            </div>
-        </div>
-    );
-
-    const Row = ({ icon: Icon, label, value, onClick, last }) => (
-        <div
-            onClick={onClick}
-            className={`flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50 transition-colors ${!last ? 'border-b border-border' : ''}`}
-        >
-            <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
-                    <Icon size={18} />
-                </div>
-                <span className="font-medium text-foreground">{label}</span>
-            </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-                {typeof value === 'string' ? (
-                    <>
-                        <span className="text-sm">{value}</span>
-                        <ChevronRight size={16} />
-                    </>
-                ) : (
-                    value
-                )}
-            </div>
-        </div>
-    );
 
     const handleTeamClick = () => {
         if (currentTier === 'free') {
@@ -310,7 +311,8 @@ export default function Settings() {
             </Section>
             )}
 
-            {userRole === 'owner' && (
+            {/* FIX #13: Dev tier toggle only visible in development builds */}
+            {import.meta.env.DEV && userRole === 'owner' && (
             <Section title={t.developerTemp}>
                 <div
                     onClick={() => {
@@ -556,7 +558,8 @@ export default function Settings() {
                     value="WhatsApp"
                     onClick={() => {
                         const phoneNumber = "6287761267280";
-                        const message = "Hello, I am experiencing problems with my Inventor-E app. Can you help me? My email is [user_email]";
+                        // FIX #14: Interpolate actual user email instead of literal placeholder
+                        const message = `Hello, I am experiencing problems with my Inventor-E app. Can you help me? My email is ${user?.email || 'unknown'}`;
                         const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
                         window.open(whatsappUrl, '_blank');
                     }}

@@ -11,7 +11,8 @@ import {
     Percent, 
     DollarSign,
     MessageCircle,
-    CheckCircle2
+    CheckCircle2,
+    Loader2
 } from 'lucide-react';
 import { useCartStore } from '../store/useCartStore';
 import { useAuthStore } from '../store/useAuthStore';
@@ -58,6 +59,22 @@ export default function CartDrawer() {
     const [localTax, setLocalTax] = useState(taxRate);
     const [localDiscount, setLocalDiscount] = useState(discountValue);
     const [selectedCustomerId, setSelectedCustomerId] = useState('');
+    const [isProcessing, setIsProcessing] = useState(false);
+
+    // FIX #2: Reset local input state when cart opens so inputs stay in sync with store
+    React.useEffect(() => {
+        if (isOpen) {
+            setLocalTax(taxRate);
+            setLocalDiscount(discountValue);
+        }
+    }, [isOpen]);
+
+    React.useEffect(() => {
+        if (!isOpen) {
+            setCompletedSale(null);
+            setSelectedCustomerId('');
+        }
+    }, [isOpen]);
 
     const handleTaxChange = (e) => {
         const val = parseFloat(e.target.value) || 0;
@@ -71,62 +88,100 @@ export default function CartDrawer() {
         setDiscountValue(val);
     };
 
-    React.useEffect(() => {
-        if (!isOpen) {
-            setCompletedSale(null);
-            setSelectedCustomerId('');
-        }
-    }, [isOpen]);
-
-    const handleCheckout = () => {
-        if (items.length === 0) return;
+    // FIX #1, #7, #10: Fully async checkout — awaits all DB writes before 
+    // updating shift cash or clearing cart. Loading state prevents double-tap.
+    const handleCheckout = async () => {
+        if (items.length === 0 || isProcessing) return;
+        setIsProcessing(true);
 
         const transactionId = Math.random().toString(36).substring(2, 9).toUpperCase();
 
-        // 1. Process Inventory Deductions & Logging
-        items.forEach(item => {
-            // Deduct Stock
-            updateItem(item.id, { stock: Math.max(0, item.stock - item.cartQuantity) });
-            
-            // Log Sale Transaction
-            addTransaction({
-                itemId: item.id,
-                itemName: item.name,
-                type: 'SALE',
-                quantity: item.cartQuantity,
-                price: item.price,
-                cost: item.cost || 0,
+        try {
+            // 1. Await all stock deductions in parallel
+            const stockResults = await Promise.allSettled(
+                items.map(item =>
+                    updateItem(item.id, { stock: Math.max(0, item.stock - item.cartQuantity) })
+                )
+            );
+
+            const failedStock = stockResults.filter(r => r.status === 'rejected');
+            if (failedStock.length > 0) {
+                toast.error(
+                    language === 'en'
+                        ? 'Stock update failed. Please check inventory and try again.'
+                        : 'Gagal memperbarui stok. Periksa inventaris dan coba lagi.'
+                );
+                setIsProcessing(false);
+                return;
+            }
+
+            // 2. Await all transaction logs in parallel
+            const txResults = await Promise.allSettled(
+                items.map(item =>
+                    addTransaction({
+                        itemId: item.id,
+                        itemName: item.name,
+                        type: 'SALE',
+                        quantity: item.cartQuantity,
+                        price: item.price,
+                        cost: item.cost || 0,
+                        customer_id: selectedCustomerId || null
+                    })
+                )
+            );
+
+            const failedTx = txResults.filter(r => r.status === 'rejected');
+            if (failedTx.length > 0) {
+                console.error('Transaction log errors:', failedTx);
+                // Non-fatal: stock was deducted so proceed but warn
+                toast.warning(
+                    language === 'en'
+                        ? 'Sale recorded but some transactions failed to log.'
+                        : 'Penjualan tercatat tapi beberapa transaksi gagal dicatat.'
+                );
+            }
+
+            const subtotal = getSubtotal();
+            const discount = getDiscountAmount();
+            const tax = getTaxAmount();
+            const total = getTotal();
+
+            const newSale = {
+                items: [...items],
+                subtotal,
+                discount,
+                tax,
+                total,
+                transactionId,
+                date: new Date(),
                 customer_id: selectedCustomerId || null
+            };
+
+            // 3. Update shift cash only AFTER DB writes succeed (FIX #7)
+            useShiftStore.getState().updateExpectedCash(total);
+
+            // 4. Handle loyalty points
+            if (selectedCustomerId) {
+                const pointsEarned = Math.floor(total / 10000);
+                recordCustomerPurchase(selectedCustomerId, total, pointsEarned);
+            }
+
+            setCompletedSale(newSale);
+            clearCart();
+
+            toast.success(t.completeSale || 'Checkout Successful!', {
+                description: `Transaction ${transactionId} has been recorded.`
             });
-        });
-
-        const newSale = {
-            items: [...items],
-            subtotal: getSubtotal(),
-            discount: getDiscountAmount(),
-            tax: getTaxAmount(),
-            total: getTotal(),
-            transactionId,
-            date: new Date(),
-            customer_id: selectedCustomerId || null
-        };
-
-        // If Customer is selected, add loyalty points
-        if (selectedCustomerId) {
-            // E.g. 1 point for every 10,000 spent
-            const pointsEarned = Math.floor(newSale.total / 10000);
-            recordCustomerPurchase(selectedCustomerId, newSale.total, pointsEarned);
+        } catch (err) {
+            console.error('Checkout error:', err);
+            toast.error(
+                language === 'en'
+                    ? 'Checkout failed. Please try again.'
+                    : 'Pembayaran gagal. Silakan coba lagi.'
+            );
+        } finally {
+            setIsProcessing(false);
         }
-
-        // Update shift expected cash
-        useShiftStore.getState().updateExpectedCash(newSale.total);
-
-        setCompletedSale(newSale);
-        clearCart();
-
-        toast.success(t.completeSale || 'Checkout Successful!', {
-            description: `Transaction ${transactionId} has been recorded.`
-        });
     };
 
     const handleWhatsAppShare = () => {
@@ -186,7 +241,8 @@ export default function CartDrawer() {
                                 {items.length > 0 && (
                                     <button 
                                         onClick={clearCart}
-                                        className="p-2 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-full transition-colors mr-2"
+                                        disabled={isProcessing}
+                                        className="p-2 bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-full transition-colors mr-2 disabled:opacity-50"
                                         title={t.clearCart}
                                     >
                                         <Trash2 size={18} />
@@ -230,7 +286,6 @@ export default function CartDrawer() {
                                     <button 
                                         onClick={handleWhatsAppShare}
                                         className="w-full p-4 rounded-xl font-bold bg-[#25D366] text-white hover:bg-[#20BE59] flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.98]"
-                                        title="Available for Pro users"
                                     >
                                         <MessageCircle size={20} />
                                         Share via WhatsApp
@@ -283,7 +338,8 @@ export default function CartDrawer() {
                                             <div className="flex items-center bg-muted/50 rounded-lg p-1 border border-border">
                                                 <button 
                                                     onClick={() => updateQuantity(item.id, -1)}
-                                                    className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-background text-foreground transition-colors"
+                                                    disabled={isProcessing}
+                                                    className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-background text-foreground transition-colors disabled:opacity-40"
                                                 >
                                                     <Minus size={16} />
                                                 </button>
@@ -292,7 +348,7 @@ export default function CartDrawer() {
                                                 </span>
                                                 <button 
                                                     onClick={() => updateQuantity(item.id, 1)}
-                                                    disabled={item.cartQuantity >= item.stock}
+                                                    disabled={item.cartQuantity >= item.stock || isProcessing}
                                                     className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-background text-foreground transition-colors disabled:opacity-30"
                                                 >
                                                     <Plus size={16} />
@@ -300,7 +356,8 @@ export default function CartDrawer() {
                                             </div>
                                             <button 
                                                 onClick={() => removeItem(item.id)}
-                                                className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                                                disabled={isProcessing}
+                                                className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors disabled:opacity-40"
                                             >
                                                 <Trash2 size={18} />
                                             </button>
@@ -342,7 +399,8 @@ export default function CartDrawer() {
                                                 min="0"
                                                 value={localDiscount}
                                                 onChange={handleDiscountChange}
-                                                className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-xl text-sm text-foreground focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none"
+                                                disabled={isProcessing}
+                                                className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-xl text-sm text-foreground focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none disabled:opacity-50"
                                                 placeholder="0"
                                             />
                                         </div>
@@ -360,7 +418,8 @@ export default function CartDrawer() {
                                                 min="0"
                                                 value={localTax}
                                                 onChange={handleTaxChange}
-                                                className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-xl text-sm text-foreground focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none"
+                                                disabled={isProcessing}
+                                                className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-xl text-sm text-foreground focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none disabled:opacity-50"
                                                 placeholder="0"
                                             />
                                         </div>
@@ -373,7 +432,8 @@ export default function CartDrawer() {
                                         <select
                                             value={selectedCustomerId}
                                             onChange={(e) => setSelectedCustomerId(e.target.value)}
-                                            className="w-full text-sm bg-background border border-border rounded-xl px-3 py-2 outline-none focus:border-primary text-foreground appearance-none"
+                                            disabled={isProcessing}
+                                            className="w-full text-sm bg-background border border-border rounded-xl px-3 py-2 outline-none focus:border-primary text-foreground appearance-none disabled:opacity-50"
                                         >
                                             <option value="">-- No Customer Selected --</option>
                                             {customers.map(c => (
@@ -421,10 +481,20 @@ export default function CartDrawer() {
                                 <div className="flex gap-3 pt-2">
                                     <button 
                                         onClick={handleCheckout}
-                                        className="flex-1 py-4 px-6 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02] active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2"
+                                        disabled={isProcessing || items.length === 0}
+                                        className="flex-1 py-4 px-6 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-[1.02] active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-60 disabled:pointer-events-none"
                                     >
-                                        <Receipt size={20} />
-                                        {t.completeSale}
+                                        {isProcessing ? (
+                                            <>
+                                                <Loader2 size={20} className="animate-spin" />
+                                                {language === 'en' ? 'Processing...' : 'Memproses...'}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Receipt size={20} />
+                                                {t.completeSale}
+                                            </>
+                                        )}
                                     </button>
                                 </div>
                             </div>

@@ -19,8 +19,7 @@ export const useShiftStore = create((set, get) => ({
                 .eq('user_id', session.user.id)
                 .eq('status', 'OPEN')
                 .order('start_time', { ascending: false })
-                .limit(1)
-                .single();
+                .maybeSingle();
 
             if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
                 console.error('Error fetching shift:', error);

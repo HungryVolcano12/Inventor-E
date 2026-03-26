@@ -1,20 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSupplierStore } from '../store/useSupplierStore';
-import { Truck, Plus, Phone, Mail, Search, Edit2, Trash2, X, MapPin, Printer } from 'lucide-react';
+import { useAuthStore } from '../store/useAuthStore';
+import { Truck, Plus, Phone, Mail, Search, Edit2, Trash2, X, MapPin, Printer, Loader2 } from 'lucide-react';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { generatePO } from '../utils/exportData';
+import { toast } from 'sonner';
 
 export default function Suppliers() {
     const { suppliers, addSupplier, updateSupplier, deleteSupplier, fetchSuppliers, loading } = useSupplierStore();
+    const { storeId } = useAuthStore();
     const [searchQuery, setSearchQuery] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingSupplier, setEditingSupplier] = useState(null);
+    const [isSaving, setIsSaving] = useState(false);
     const { language } = useSettingsStore();
 
+    // FIX #12: Use storeId as dependency to prevent race condition on initial mount
     useEffect(() => {
-        fetchSuppliers();
-    }, []);
+        if (storeId) fetchSuppliers();
+    }, [storeId]);
 
     // Form state
     const [formData, setFormData] = useState({ name: '', phone: '', email: '', address: '' });
@@ -35,25 +40,43 @@ export default function Suppliers() {
         setIsModalOpen(true);
     };
 
+    // FIX #11: Loading state prevents double-submit
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setIsSaving(true);
         try {
             if (editingSupplier) {
                 await updateSupplier(editingSupplier.id, formData);
+                toast.success(language === 'en' ? 'Supplier updated!' : 'Pemasok diperbarui!');
             } else {
                 await addSupplier(formData);
+                toast.success(language === 'en' ? 'Supplier added!' : 'Pemasok ditambahkan!');
             }
             setIsModalOpen(false);
         } catch (err) {
             console.error(err);
-            alert('Error saving supplier');
+            toast.error(language === 'en' ? 'Error saving supplier. Please try again.' : 'Gagal menyimpan pemasok.');
+        } finally {
+            setIsSaving(false);
         }
     };
 
-    const handleDelete = async (id) => {
-        if (confirm('Are you sure you want to delete this supplier?')) {
-            await deleteSupplier(id);
-        }
+    // FIX #5: Replace window.confirm with Sonner action toast
+    const handleDelete = (id, name) => {
+        toast(`${language === 'en' ? 'Delete' : 'Hapus'} "${name}"?`, {
+            action: {
+                label: language === 'en' ? 'Delete' : 'Hapus',
+                onClick: async () => {
+                    try {
+                        await deleteSupplier(id);
+                        toast.success(language === 'en' ? 'Supplier deleted.' : 'Pemasok dihapus.');
+                    } catch {
+                        toast.error(language === 'en' ? 'Failed to delete supplier.' : 'Gagal menghapus pemasok.');
+                    }
+                },
+            },
+            cancel: { label: language === 'en' ? 'Cancel' : 'Batal', onClick: () => {} },
+        });
     };
 
     return (
@@ -108,10 +131,10 @@ export default function Suppliers() {
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="border-b border-border">
-                                    <th className="font-bold text-muted-foreground px-4 py-3 text-sm">Name</th>
-                                    <th className="font-bold text-muted-foreground px-4 py-3 text-sm">Contact</th>
-                                    <th className="font-bold text-muted-foreground px-4 py-3 text-sm">Address</th>
-                                    <th className="font-bold text-muted-foreground px-4 py-3 text-sm text-center">Actions</th>
+                                    <th className="font-bold text-muted-foreground px-4 py-3 text-sm">{language === 'en' ? 'Name' : 'Nama'}</th>
+                                    <th className="font-bold text-muted-foreground px-4 py-3 text-sm">{language === 'en' ? 'Contact' : 'Kontak'}</th>
+                                    <th className="font-bold text-muted-foreground px-4 py-3 text-sm">{language === 'en' ? 'Address' : 'Alamat'}</th>
+                                    <th className="font-bold text-muted-foreground px-4 py-3 text-sm text-center">{language === 'en' ? 'Actions' : 'Aksi'}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -153,7 +176,7 @@ export default function Suppliers() {
                                                     <Edit2 size={16} />
                                                 </button>
                                                 <button 
-                                                    onClick={() => handleDelete(supplier.id)} 
+                                                    onClick={() => handleDelete(supplier.id, supplier.name)} 
                                                     className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg transition-colors border border-transparent hover:border-red-500/20"
                                                     title={language === 'en' ? 'Delete' : 'Hapus'}
                                                 >
@@ -189,7 +212,7 @@ export default function Suppliers() {
 
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-bold text-muted-foreground">Name *</label>
+                                    <label className="text-sm font-bold text-muted-foreground">{language === 'en' ? 'Name *' : 'Nama *'}</label>
                                     <input 
                                         type="text" 
                                         required 
@@ -200,13 +223,13 @@ export default function Suppliers() {
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-bold text-muted-foreground">Phone Number</label>
+                                    <label className="text-sm font-bold text-muted-foreground">{language === 'en' ? 'Phone Number' : 'Nomor Telepon'}</label>
                                     <input 
                                         type="tel" 
                                         value={formData.phone}
                                         onChange={e => setFormData({...formData, phone: e.target.value})}
                                         className="w-full px-4 py-3 rounded-xl border border-border bg-background outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium text-sm"
-                                        placeholder="+1 234 567 890"
+                                        placeholder="+62 812 3456 7890"
                                     />
                                 </div>
                                 <div className="space-y-1.5">
@@ -220,7 +243,7 @@ export default function Suppliers() {
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-bold text-muted-foreground">Address</label>
+                                    <label className="text-sm font-bold text-muted-foreground">{language === 'en' ? 'Address' : 'Alamat'}</label>
                                     <textarea 
                                         value={formData.address}
                                         onChange={e => setFormData({...formData, address: e.target.value})}
@@ -231,10 +254,14 @@ export default function Suppliers() {
                                 </div>
 
                                 <button 
-                                    type="submit" 
-                                    className="w-full py-3 mt-6 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-md"
+                                    type="submit"
+                                    disabled={isSaving}
+                                    className="w-full py-3 mt-6 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-60 disabled:pointer-events-none"
                                 >
-                                    {editingSupplier ? (language==='en'?'Save Changes':'Simpan Perubahan') : (language==='en'?'Add Supplier':'Tambah Pemasok')}
+                                    {isSaving
+                                        ? <><Loader2 size={18} className="animate-spin"/> {language === 'en' ? 'Saving...' : 'Menyimpan...'}</>
+                                        : (editingSupplier ? (language==='en'?'Save Changes':'Simpan Perubahan') : (language==='en'?'Add Supplier':'Tambah Pemasok'))
+                                    }
                                 </button>
                             </form>
                         </motion.div>

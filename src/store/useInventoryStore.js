@@ -101,7 +101,7 @@ export const useInventoryStore = create((set, get) => ({
             p_low_stock: parseInt(item.lowStockThreshold) || 5,
             p_desc: item.description || '',
             p_image: item.image || ''
-        }).single();
+        }).maybeSingle();
 
         if (error) throw error;
         // Update state directly — don't rely on real-time
@@ -154,7 +154,7 @@ export const useInventoryStore = create((set, get) => ({
             p_low_stock: dbPayload.low_stock_threshold !== undefined ? dbPayload.low_stock_threshold : null,
             p_desc: dbPayload.description !== undefined ? dbPayload.description : null,
             p_image: dbPayload.image !== undefined ? dbPayload.image : null
-        }).single();
+        }).maybeSingle();
         if (error) throw error;
         // Update state directly
         if (updated) set(state => ({ items: state.items.map(i => i.id === id ? mapItemFromDB(updated) : i) }));
@@ -218,7 +218,7 @@ export const useInventoryStore = create((set, get) => ({
             payload.customer_id = transaction.customer_id;
         }
 
-        const { error, data } = await supabase.from('transactions').insert(payload).select().single();
+        const { error, data } = await supabase.from('transactions').insert(payload).select().maybeSingle();
         if (error) throw error;
         
         // Optimistic update

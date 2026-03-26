@@ -1,16 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCustomerStore } from '../store/useCustomerStore';
-import { Users, Plus, Phone, Mail, Search, Edit2, Trash2, X, Star } from 'lucide-react';
+import { useAuthStore } from '../store/useAuthStore';
+import { Users, Plus, Phone, Mail, Search, Edit2, Trash2, X, Star, Loader2 } from 'lucide-react';
 import { formatCurrency } from '../utils/currency';
 import { useSettingsStore } from '../store/useSettingsStore';
+import { toast } from 'sonner';
 
 export default function Customers() {
-    const { customers, addCustomer, updateCustomer, deleteCustomer, isLoading } = useCustomerStore();
+    const { customers, addCustomer, updateCustomer, deleteCustomer, isLoading, fetchCustomers } = useCustomerStore();
+    const { storeId } = useAuthStore();
     const [searchQuery, setSearchQuery] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingCustomer, setEditingCustomer] = useState(null);
+    const [isSaving, setIsSaving] = useState(false);
     const { language } = useSettingsStore();
+
+    // FIX #4: Fetch customers on mount (with storeId as dep to avoid race condition)
+    useEffect(() => {
+        if (storeId) fetchCustomers();
+    }, [storeId]);
 
     // Form state
     const [formData, setFormData] = useState({ name: '', phone: '', email: '' });
@@ -31,43 +40,63 @@ export default function Customers() {
         setIsModalOpen(true);
     };
 
+    // FIX #11: Loading state on save to prevent double-submit
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setIsSaving(true);
         try {
             if (editingCustomer) {
                 await updateCustomer(editingCustomer.id, formData);
+                toast.success(language === 'en' ? 'Customer updated!' : 'Pelanggan diperbarui!');
             } else {
                 await addCustomer(formData);
+                toast.success(language === 'en' ? 'Customer added!' : 'Pelanggan ditambahkan!');
             }
             setIsModalOpen(false);
         } catch (err) {
             console.error(err);
-            alert('Error saving customer');
+            toast.error(language === 'en' ? 'Error saving customer. Please try again.' : 'Gagal menyimpan pelanggan.');
+        } finally {
+            setIsSaving(false);
         }
     };
 
-    const handleDelete = async (id) => {
-        if (confirm('Are you sure you want to delete this customer?')) {
-            await deleteCustomer(id);
-        }
+    // FIX #5: Replace window.confirm with Sonner action toast
+    const handleDelete = (id, name) => {
+        toast(`${language === 'en' ? 'Delete' : 'Hapus'} "${name}"?`, {
+            action: {
+                label: language === 'en' ? 'Delete' : 'Hapus',
+                onClick: async () => {
+                    try {
+                        await deleteCustomer(id);
+                        toast.success(language === 'en' ? 'Customer deleted.' : 'Pelanggan dihapus.');
+                    } catch {
+                        toast.error(language === 'en' ? 'Failed to delete customer.' : 'Gagal menghapus pelanggan.');
+                    }
+                },
+            },
+            cancel: { label: language === 'en' ? 'Cancel' : 'Batal', onClick: () => {} },
+        });
     };
 
     return (
-        <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
+        <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6 pb-24">
             <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
                 <div>
                     <h1 className="text-3xl font-black text-foreground flex items-center gap-3">
                         <Users className="text-primary" size={32} />
-                        Customers & Loyalty
+                        {language === 'en' ? 'Customers & Loyalty' : 'Pelanggan & Loyalitas'}
                     </h1>
-                    <p className="text-muted-foreground mt-1 text-sm font-medium">Manage your VIPs and track loyalty points.</p>
+                    <p className="text-muted-foreground mt-1 text-sm font-medium">
+                        {language === 'en' ? 'Manage your VIPs and track loyalty points.' : 'Kelola pelanggan VIP dan lacak poin loyalitas.'}
+                    </p>
                 </div>
                 <button
                     onClick={() => handleOpenModal()}
                     className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-3 rounded-xl font-bold hover:bg-primary/90 transition-all shadow-md active:scale-95"
                 >
                     <Plus size={20} />
-                    Add Customer
+                    {language === 'en' ? 'Add Customer' : 'Tambah Pelanggan'}
                 </button>
             </div>
 
@@ -78,7 +107,7 @@ export default function Customers() {
                     </div>
                     <input
                         type="text"
-                        placeholder="Search by name or phone..."
+                        placeholder={language === 'en' ? 'Search by name or phone...' : 'Cari nama atau nomor telepon...'}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="w-full pl-12 pr-4 py-3 rounded-xl border border-border bg-background outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-sm font-medium"
@@ -90,19 +119,19 @@ export default function Customers() {
                 ) : filteredCustomers.length === 0 ? (
                     <div className="py-16 flex flex-col items-center justify-center text-muted-foreground">
                         <Users size={48} className="opacity-20 mb-4" />
-                        <h3 className="font-bold text-lg text-foreground">No customers found</h3>
-                        <p className="text-sm">Add some to start tracking loyalty points.</p>
+                        <h3 className="font-bold text-lg text-foreground">{language === 'en' ? 'No customers found' : 'Pelanggan tidak ditemukan'}</h3>
+                        <p className="text-sm">{language === 'en' ? 'Add some to start tracking loyalty points.' : 'Tambahkan untuk mulai melacak poin loyalitas.'}</p>
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="border-b border-border">
-                                    <th className="font-bold text-muted-foreground px-4 py-3 text-sm">Name</th>
-                                    <th className="font-bold text-muted-foreground px-4 py-3 text-sm">Contact</th>
-                                    <th className="font-bold text-muted-foreground px-4 py-3 text-sm text-right">Points</th>
-                                    <th className="font-bold text-muted-foreground px-4 py-3 text-sm text-right">Total Spent</th>
-                                    <th className="font-bold text-muted-foreground px-4 py-3 text-sm text-center">Actions</th>
+                                    <th className="font-bold text-muted-foreground px-4 py-3 text-sm">{language === 'en' ? 'Name' : 'Nama'}</th>
+                                    <th className="font-bold text-muted-foreground px-4 py-3 text-sm">{language === 'en' ? 'Contact' : 'Kontak'}</th>
+                                    <th className="font-bold text-muted-foreground px-4 py-3 text-sm text-right">{language === 'en' ? 'Points' : 'Poin'}</th>
+                                    <th className="font-bold text-muted-foreground px-4 py-3 text-sm text-right">{language === 'en' ? 'Total Spent' : 'Total Belanja'}</th>
+                                    <th className="font-bold text-muted-foreground px-4 py-3 text-sm text-center">{language === 'en' ? 'Actions' : 'Aksi'}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -131,7 +160,7 @@ export default function Customers() {
                                                 <button onClick={() => handleOpenModal(customer)} className="p-2 bg-muted hover:bg-muted/80 text-foreground rounded-lg transition-colors">
                                                     <Edit2 size={16} />
                                                 </button>
-                                                <button onClick={() => handleDelete(customer.id)} className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg transition-colors">
+                                                <button onClick={() => handleDelete(customer.id, customer.name)} className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg transition-colors">
                                                     <Trash2 size={16} />
                                                 </button>
                                             </div>
@@ -159,12 +188,15 @@ export default function Customers() {
                             
                             <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
                                 <Users className="text-primary" />
-                                {editingCustomer ? 'Edit Customer' : 'Add New Customer'}
+                                {editingCustomer
+                                    ? (language === 'en' ? 'Edit Customer' : 'Edit Pelanggan')
+                                    : (language === 'en' ? 'Add New Customer' : 'Tambah Pelanggan Baru')
+                                }
                             </h2>
 
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-bold text-muted-foreground">Full Name *</label>
+                                    <label className="text-sm font-bold text-muted-foreground">{language === 'en' ? 'Full Name *' : 'Nama Lengkap *'}</label>
                                     <input 
                                         type="text" 
                                         required 
@@ -175,13 +207,13 @@ export default function Customers() {
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-sm font-bold text-muted-foreground">Phone Number</label>
+                                    <label className="text-sm font-bold text-muted-foreground">{language === 'en' ? 'Phone Number' : 'Nomor Telepon'}</label>
                                     <input 
                                         type="tel" 
                                         value={formData.phone}
                                         onChange={e => setFormData({...formData, phone: e.target.value})}
                                         className="w-full px-4 py-3 rounded-xl border border-border bg-background outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium text-sm"
-                                        placeholder="+1 234 567 890"
+                                        placeholder="+62 812 3456 7890"
                                     />
                                 </div>
                                 <div className="space-y-1.5">
@@ -197,9 +229,10 @@ export default function Customers() {
 
                                 <button 
                                     type="submit" 
-                                    className="w-full py-3 mt-6 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-md"
+                                    disabled={isSaving}
+                                    className="w-full py-3 mt-6 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-60 disabled:pointer-events-none"
                                 >
-                                    {editingCustomer ? 'Save Changes' : 'Create Customer'}
+                                    {isSaving ? <><Loader2 size={18} className="animate-spin" /> {language === 'en' ? 'Saving...' : 'Menyimpan...'}</> : (editingCustomer ? (language === 'en' ? 'Save Changes' : 'Simpan Perubahan') : (language === 'en' ? 'Create Customer' : 'Buat Pelanggan'))}
                                 </button>
                             </form>
                         </motion.div>

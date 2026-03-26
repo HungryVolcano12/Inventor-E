@@ -3,7 +3,7 @@ import autoTable from 'jspdf-autotable';
 import { formatCurrency } from './currency';
 import { useSettingsStore } from '../store/useSettingsStore';
 
-export const generateReceipt = ({ items, subtotal, discount, tax, total, transactionId }) => {
+export const generateReceipt = async ({ items, subtotal, discount, tax, total, transactionId }) => {
     // Standard receipt format typical for thermal printers (80mm is ~80 width)
     // Using slightly wider standard A5 for better email/digital viewing.
     const doc = new jsPDF({
@@ -13,9 +13,10 @@ export const generateReceipt = ({ items, subtotal, discount, tax, total, transac
     });
 
     const { receiptLogo, receiptAddress, receiptFooter } = useSettingsStore.getState();
+    const { storeName: storeNameFromAuth } = (await import('../store/useAuthStore')).useAuthStore.getState();
 
     const pageWidth = doc.internal.pageSize.getWidth();
-    const storeName = "Inventor-E Store";
+    const storeName = storeNameFromAuth || "Inventor-E Store";
     const storeAddress = receiptAddress || "Generated via Inventor-E App";
 
     // Header Structure
