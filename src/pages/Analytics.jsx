@@ -198,7 +198,7 @@ export default function Analytics() {
     return (
         <div className="p-6 pb-24" onClick={() => setIsDropdownOpen(false)}>
             {/* Header Section */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10 mt-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 mt-4">
                 <div>
                     <h1 className="text-4xl font-black text-foreground tracking-tight">{t.stats}</h1>
                     <p className="text-sm text-muted-foreground font-medium mt-1">{language === 'en' ? 'Performance overview' : 'Ikhtisar performa'}</p>
@@ -243,14 +243,14 @@ export default function Analytics() {
             </div>
 
             {/* Hero Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <motion.div 
                     whileHover={{ y: -4, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)' }}
                     onClick={() => setHistoryModal('revenue')}
-                    className="p-6 bg-zinc-900 dark:bg-zinc-950 rounded-3xl text-left relative overflow-hidden group cursor-pointer border border-white/10 shadow-xl"
+                    className="p-5 bg-zinc-900 dark:bg-zinc-950 rounded-3xl text-left relative overflow-hidden group cursor-pointer border border-white/10 shadow-xl"
                 >
-                    <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-all duration-700 -rotate-12 group-hover:rotate-0 text-white">
-                        <TrendingUp size={140} />
+                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-all duration-700 -rotate-12 group-hover:rotate-0 text-white">
+                        <TrendingUp size={100} />
                     </div>
                     <div className="relative z-10">
                         <span className="inline-flex items-center gap-2 text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-4 bg-white/5 px-3 py-1 rounded-full border border-white/5">
@@ -267,10 +267,10 @@ export default function Analytics() {
                 <motion.div
                     whileHover={{ y: -4, boxShadow: '0 25px 50px -12px rgba(16, 185, 129, 0.2)' }}
                     onClick={() => setHistoryModal('profit')}
-                    className="p-6 bg-emerald-500 rounded-3xl text-left relative overflow-hidden group cursor-pointer shadow-xl shadow-emerald-500/20"
+                    className="p-5 bg-emerald-500 rounded-3xl text-left relative overflow-hidden group cursor-pointer shadow-xl shadow-emerald-500/20"
                 >
-                    <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-all duration-700 -rotate-12 group-hover:rotate-0 text-white">
-                        <TrendingUp size={140} />
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-all duration-700 -rotate-12 group-hover:rotate-0 text-white">
+                        <TrendingUp size={100} />
                     </div>
                     <div className="relative z-10">
                         <span className="inline-flex items-center gap-2 text-[10px] font-black text-emerald-100 uppercase tracking-[0.3em] mb-4 bg-black/10 px-3 py-1 rounded-full">
@@ -287,8 +287,8 @@ export default function Analytics() {
 
             {/* Revenue Trend Chart */}
             {timeRange !== 'today' && (
-                <div className="mb-12 bg-card rounded-3xl p-6 border border-border/60 shadow-sm relative overflow-hidden">
-                    <div className="flex items-center justify-between mb-8 relative z-10">
+                <div className="mb-8 bg-card rounded-3xl p-6 border border-border/60 shadow-sm relative overflow-hidden">
+                    <div className="flex items-center justify-between mb-6 relative z-10">
                         <div>
                             <h3 className="font-black text-xl text-foreground tracking-tight">{language === 'en' ? 'Revenue Forecast' : 'Prakiraan Pendapatan'}</h3>
                             <p className="text-xs text-muted-foreground font-medium">{language === 'en' ? 'Review your weekly growth trends' : 'Tinjau tren pertumbuhan mingguan Anda'}</p>
@@ -338,10 +338,10 @@ export default function Analytics() {
             )}
 
             {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Top Selling Section - Redesigned Airbnb Style */}
                 <section>
-                    <div className="flex items-center justify-between mb-8 px-2">
+                    <div className="flex items-center justify-between mb-4 px-2">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-500">
                                 <TrendingUp size={22} />
@@ -365,10 +365,10 @@ export default function Analytics() {
                                         transition={{ delay: index * 0.1 }}
                                         className="group bg-card rounded-2xl p-4 border border-border shadow-sm hover:shadow-2xl hover:shadow-black/[0.04] transition-all relative overflow-hidden active:scale-[0.99]"
                                     >
-                                        <div className="flex items-center gap-6 relative z-10">
+                                        <div className="flex items-center gap-4 relative z-10">
                                             {/* Experience-style image container */}
-                                            <div className="relative w-28 h-28 shrink-0 group-hover:scale-105 transition-transform duration-700">
-                                                <div className="w-full h-full rounded-3xl overflow-hidden border border-border/50 shadow-inner bg-muted/20">
+                                            <div className="relative w-24 h-24 sm:w-20 sm:h-20 shrink-0 group-hover:scale-105 transition-transform duration-700">
+                                                <div className="w-full h-full rounded-2xl overflow-hidden border border-border/50 shadow-inner bg-muted/20">
                                                     {item.image ? (
                                                         <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
                                                     ) : (
@@ -425,10 +425,10 @@ export default function Analytics() {
                                 );
                             })
                         ) : (
-                            <div className="text-center py-24 text-muted-foreground bg-muted/10 rounded-2xl border border-border border-dashed px-6">
-                                <Archive size={64} className="mx-auto mb-6 opacity-10" />
-                                <h4 className="text-xl font-black text-foreground/20 italic">{language === 'en' ? 'Data Pending' : 'Data Tertunda'}</h4>
-                                <p className="font-bold text-xs uppercase tracking-widest mt-2">{language === 'en' ? 'No sales records found' : 'Tidak ada catatan penjualan'}</p>
+                            <div className="text-center py-12 text-muted-foreground bg-muted/10 rounded-2xl border border-border border-dashed px-6">
+                                <Archive size={48} className="mx-auto mb-4 opacity-10" />
+                                <h4 className="text-lg font-black text-foreground/20 italic">{language === 'en' ? 'Data Pending' : 'Data Tertunda'}</h4>
+                                <p className="font-bold text-[10px] uppercase tracking-widest mt-2">{language === 'en' ? 'No sales records found' : 'Tidak ada catatan penjualan'}</p>
                             </div>
                         )}
                     </div>
@@ -437,7 +437,7 @@ export default function Analytics() {
                 {/* Staff Leaderboard Section */}
                 {isManager() && (
                     <section>
-                        <div className="flex items-center justify-between mb-8 px-2">
+                        <div className="flex items-center justify-between mb-4 px-2">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-500">
                                     <Users size={22} />
@@ -454,10 +454,10 @@ export default function Analytics() {
                                         initial={{ opacity: 0, x: 20 }}
                                         animate={{ opacity: 1, x: 0 }}
                                         transition={{ delay: index * 0.1 }}
-                                        className="flex items-center gap-6 p-4 bg-card rounded-2xl border border-border shadow-sm hover:shadow-xl transition-all relative overflow-hidden group"
+                                        className="flex items-center gap-4 p-4 bg-card rounded-2xl border border-border shadow-sm hover:shadow-xl transition-all relative overflow-hidden group"
                                     >
                                         <div className="relative shrink-0">
-                                            <div className={`w-16 h-16 rounded-[1.8rem] flex items-center justify-center font-black transition-all duration-500 group-hover:scale-105 group-hover:rotate-6 ${
+                                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black transition-all duration-500 group-hover:scale-105 group-hover:rotate-6 ${
                                                 index === 0 ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30' : 
                                                 'bg-muted text-muted-foreground border border-border/50'
                                             }`}>
@@ -487,8 +487,8 @@ export default function Analytics() {
                                     </motion.div>
                                 ))
                             ) : (
-                                <div className="text-center py-20 text-muted-foreground bg-muted/10 rounded-2xl border border-border border-dashed">
-                                    <p className="font-black italic opacity-20">{language === 'en' ? 'Recruiting Heroes...' : 'Merekrut Pahlawan...'}</p>
+                                <div className="text-center py-12 text-muted-foreground bg-muted/10 rounded-2xl border border-border border-dashed">
+                                    <p className="font-black italic text-xs opacity-20 tracking-widest uppercase">{language === 'en' ? 'Recruiting Heroes...' : 'Merekrut Pahlawan...'}</p>
                                 </div>
                             )}
                         </div>
@@ -497,12 +497,12 @@ export default function Analytics() {
             </div>
 
             {/* Notifications / Alerts Section */}
-            <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Low Stock Row */}
                 <div className="bg-orange-50/50 dark:bg-orange-500/5 rounded-3xl p-6 border border-orange-100 dark:border-orange-500/10">
-                    <div className="flex items-center gap-4 mb-8">
-                        <div className="w-12 h-12 rounded-2xl bg-orange-500 flex items-center justify-center text-white shadow-lg shadow-orange-500/40">
-                            <AlertTriangle size={24} />
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center text-white shadow-lg shadow-orange-500/40">
+                            <AlertTriangle size={20} />
                         </div>
                         <div>
                             <h3 className="font-black text-xl text-foreground tracking-tight">{t.lowStockItems}</h3>
@@ -539,9 +539,9 @@ export default function Analytics() {
 
                 {/* Dead Stock Row */}
                 <div className="bg-zinc-100/50 dark:bg-zinc-500/5 rounded-3xl p-6 border border-border/50">
-                    <div className="flex items-center gap-4 mb-8">
-                        <div className="w-12 h-12 rounded-2xl bg-zinc-800 dark:bg-zinc-700 flex items-center justify-center text-white shadow-lg shadow-black/20">
-                            <Archive size={24} />
+                    <div className="flex items-center gap-4 mb-6">
+                        <div className="w-10 h-10 rounded-xl bg-zinc-800 dark:bg-zinc-700 flex items-center justify-center text-white shadow-lg shadow-black/20">
+                            <Archive size={20} />
                         </div>
                         <div>
                             <h3 className="font-black text-xl text-foreground tracking-tight">{t.deadStock || 'Dead Stock'}</h3>
