@@ -29,6 +29,7 @@ export default function Inventory() {
 
     const { currentShift } = useShiftStore();
     const { currentTier } = useSubscriptionStore();
+    const isPro = currentTier === 'pro' || currentTier === 'business';
     const [isShiftModalOpen, setIsShiftModalOpen] = useState(false);
 
     const requireShift = currentTier === 'business' && globalMode === 'pos';
