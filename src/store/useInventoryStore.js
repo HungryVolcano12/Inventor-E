@@ -207,6 +207,7 @@ export const useInventoryStore = create((set, get) => ({
             price: parseFloat(transaction.price) || 0,
             total: parseFloat(transaction.total) || parseFloat(transaction.price) * parseInt(transaction.quantity) || 0,
             cost: parseFloat(transaction.cost) || 0,
+            payment_method: transaction.payment_method || 'CASH',
         };
 
         const stateUser = useAuthStore.getState().user;

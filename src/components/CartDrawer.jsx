@@ -60,12 +60,14 @@ export default function CartDrawer() {
     const [localDiscount, setLocalDiscount] = useState(discountValue);
     const [selectedCustomerId, setSelectedCustomerId] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState('CASH');
 
     // FIX #2: Reset local input state when cart opens so inputs stay in sync with store
     React.useEffect(() => {
         if (isOpen) {
             setLocalTax(taxRate);
             setLocalDiscount(discountValue);
+            setPaymentMethod('CASH');
         }
     }, [isOpen]);
 
@@ -125,7 +127,8 @@ export default function CartDrawer() {
                         quantity: item.cartQuantity,
                         price: item.price,
                         cost: item.cost || 0,
-                        customer_id: selectedCustomerId || null
+                        customer_id: selectedCustomerId || null,
+                        payment_method: paymentMethod,
                     })
                 )
             );
@@ -157,8 +160,10 @@ export default function CartDrawer() {
                 customer_id: selectedCustomerId || null
             };
 
-            // 3. Update shift cash only AFTER DB writes succeed (FIX #7)
-            useShiftStore.getState().updateExpectedCash(total);
+            // 3. Update shift cash ONLY for cash payments (FIX #7)
+            if (paymentMethod === 'CASH') {
+                useShiftStore.getState().updateExpectedCash(total);
+            }
 
             // 4. Handle loyalty points
             if (selectedCustomerId) {
@@ -444,6 +449,41 @@ export default function CartDrawer() {
                                         </select>
                                     </div>
                                 )}
+
+                                {/* Payment Method Selector (Pro plan) */}
+                                <div className="pt-2">
+                                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-2">
+                                        Payment Method
+                                    </label>
+                                    <div className="grid grid-cols-5 gap-1.5">
+                                        {[
+                                            { id: 'CASH',  label: 'Cash',  icon: '💵' },
+                                            { id: 'CARD',  label: 'Card',  icon: '💳' },
+                                            { id: 'QRIS',  label: 'QRIS',  icon: '📱' },
+                                            { id: 'GOPAY', label: 'GoPay', icon: '🟢' },
+                                            { id: 'OVO',   label: 'OVO',   icon: '🟣' },
+                                        ].map(m => (
+                                            <button
+                                                key={m.id}
+                                                onClick={() => setPaymentMethod(m.id)}
+                                                disabled={isProcessing}
+                                                className={`flex flex-col items-center justify-center py-2 rounded-xl border text-xs font-semibold transition-all disabled:opacity-50 ${
+                                                    paymentMethod === m.id
+                                                        ? 'bg-primary text-primary-foreground border-primary shadow-md scale-105'
+                                                        : 'bg-background border-border text-muted-foreground hover:border-primary/50'
+                                                }`}
+                                            >
+                                                <span className="text-lg leading-none mb-0.5">{m.icon}</span>
+                                                <span className="text-[10px]">{m.label}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {paymentMethod !== 'CASH' && (
+                                        <p className="text-[10px] text-muted-foreground mt-1.5 text-center">
+                                            {paymentMethod} payments are not counted in the cash drawer
+                                        </p>
+                                    )}
+                                </div>
 
                                 {/* Summary */}
                                 <div className="space-y-2 pt-2 border-t border-border border-dashed">

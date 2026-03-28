@@ -537,6 +537,88 @@ export default function Analytics() {
                     </div>
                 </div>
 
+                {/* Staff Performance — Pro/Business only */}
+                {(currentTier === 'pro' || currentTier === 'business') && (
+                    <div className="bg-zinc-100/50 dark:bg-zinc-500/5 rounded-3xl p-6 border border-border/50">
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-lg">
+                                <Users size={20} />
+                            </div>
+                            <div>
+                                <h3 className="font-black text-xl text-foreground tracking-tight">Staff Performance</h3>
+                                <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Revenue by cashier</p>
+                            </div>
+                        </div>
+
+                        {topStaff.length === 0 ? (
+                            <p className="text-center py-10 text-muted-foreground italic font-medium">No sales recorded in this period</p>
+                        ) : (
+                            <>
+                                {/* Bar chart */}
+                                <div className="mb-6" style={{ height: 180 }}>
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={topStaff} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                                            <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                                            <XAxis
+                                                dataKey="name"
+                                                tick={{ fontSize: 10, fontWeight: 700 }}
+                                                tickFormatter={v => v.split(' ')[0]}
+                                            />
+                                            <YAxis tick={{ fontSize: 10 }} tickFormatter={v => formatCurrency(v).replace(/\.00$/, '')} />
+                                            <Tooltip
+                                                formatter={(value) => [formatCurrency(value), 'Revenue']}
+                                                contentStyle={{ borderRadius: 12, fontSize: 12 }}
+                                            />
+                                            <Bar dataKey="revenue" radius={[6, 6, 0, 0]}>
+                                                {topStaff.map((_, idx) => (
+                                                    <Cell key={idx} fill={`hsl(var(--primary) / ${1 - idx * 0.15})`} />
+                                                ))}
+                                            </Bar>
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+
+                                {/* Ranked table */}
+                                <div className="space-y-3">
+                                    {topStaff.map((staff, idx) => {
+                                        const txCount = filteredTransactions.filter(tx => (tx.cashierName || 'Unknown') === staff.name).length;
+                                        const avg = txCount > 0 ? staff.revenue / txCount : 0;
+                                        const pct = topStaff[0].revenue > 0 ? (staff.revenue / topStaff[0].revenue) * 100 : 0;
+                                        return (
+                                            <div key={staff.name} className="flex items-center gap-4 p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-border shadow-sm">
+                                                <span className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm shrink-0 ${
+                                                    idx === 0 ? 'bg-amber-400 text-white' :
+                                                    idx === 1 ? 'bg-zinc-400 text-white' :
+                                                    idx === 2 ? 'bg-amber-700 text-white' :
+                                                    'bg-muted text-muted-foreground'
+                                                }`}>
+                                                    {idx + 1}
+                                                </span>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <p className="font-bold text-foreground text-sm truncate">{staff.name}</p>
+                                                        <span className="font-black text-foreground text-sm ml-2">{formatCurrency(staff.revenue)}</span>
+                                                    </div>
+                                                    <div className="w-full bg-muted rounded-full h-1.5">
+                                                        <div
+                                                            className="bg-primary h-1.5 rounded-full transition-all"
+                                                            style={{ width: `${pct}%` }}
+                                                        />
+                                                    </div>
+                                                    <div className="flex justify-between mt-1">
+                                                        <span className="text-[10px] text-muted-foreground">{txCount} transactions</span>
+                                                        <span className="text-[10px] text-muted-foreground">avg {formatCurrency(avg)}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </>
+                        )}
+                    </div>
+                )}
+
                 {/* Dead Stock Row */}
                 <div className="bg-zinc-100/50 dark:bg-zinc-500/5 rounded-3xl p-6 border border-border/50">
                     <div className="flex items-center gap-4 mb-6">

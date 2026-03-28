@@ -8,6 +8,7 @@ import EditItem from './pages/EditItem';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
 import TeamManagement from './pages/TeamManagement';
+import Refunds from './pages/Refunds';
 import Auth from './pages/Auth';
 import JoinStore from './pages/JoinStore';
 import Customers from './pages/Customers';
@@ -17,6 +18,7 @@ import { useAuthStore } from './store/useAuthStore';
 import { useInventoryStore } from './store/useInventoryStore';
 import { useShiftStore } from './store/useShiftStore';
 import { useCustomerStore } from './store/useCustomerStore';
+import { usePushNotifications } from './hooks/usePushNotifications';
 
 function App() {
   const { theme, textSize, color } = useSettingsStore();
@@ -24,7 +26,7 @@ function App() {
   const { loadData } = useInventoryStore();
   const { fetchCurrentShift } = useShiftStore();
   const { fetchCustomers } = useCustomerStore();
-  // We don't fetch suppliers immediately here since Suppliers.jsx fetches them on mount, but we could. 
+  usePushNotifications(); // Feature 4: browser low-stock alerts for Pro/Business users
 
   useEffect(() => {
     initialize();
@@ -96,6 +98,7 @@ function App() {
           <Route path="analytics" element={<Analytics />} />
           <Route path="customers" element={<Customers />} />
           <Route path="suppliers" element={<Suppliers />} />
+          <Route path="refunds" element={<Refunds />} />
           <Route path="profile" element={<Settings />} />
           <Route path="team" element={<TeamManagement />} />
         </Route>
