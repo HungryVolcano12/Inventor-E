@@ -10,7 +10,7 @@ import ShiftModal from '../components/ShiftModal';
 import InventoryCard from '../components/InventoryCard';
 import AddItemCard from '../components/AddItemCard';
 import SortFilterMenu from '../components/SortFilterMenu';
-import { Search, LayoutGrid, List as ListIcon, Plus, CheckSquare, Trash2, X, Settings2, ShoppingCart, Upload, Download } from 'lucide-react';
+import { Search, LayoutGrid, List as ListIcon, Plus, CheckSquare, Trash2, X, Settings2, ShoppingCart, Upload, Download, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
@@ -163,6 +163,15 @@ export default function Inventory() {
                                 className="flex-1 bg-transparent border-none outline-none text-sm font-medium placeholder:text-muted-foreground text-foreground min-w-0"
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
+                            {isPro && (
+                                <button
+                                    onClick={() => navigate('/refunds')}
+                                    className="p-2 hover:bg-orange-500/10 text-orange-600 rounded-full transition-all shrink-0"
+                                    title="Refunds"
+                                >
+                                    <RotateCcw size={18} strokeWidth={2.5} />
+                                </button>
+                            )}
 
                             {globalMode === 'manage' && (
                                 <>

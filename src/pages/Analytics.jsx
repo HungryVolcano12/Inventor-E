@@ -3,9 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useInventoryStore } from '../store/useInventoryStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useAuthStore } from '../store/useAuthStore';
-import { useSubscriptionStore } from '../store/useSubscriptionStore';
 import { translations } from '../utils/translations';
-import { AlertTriangle, TrendingUp, ChevronDown, Check, HelpCircle, X, Pencil, Download, FileText, Table, Archive, Users, RotateCcw } from 'lucide-react';
+import { AlertTriangle, TrendingUp, ChevronDown, Check, HelpCircle, X, Pencil, Download, FileText, Table, Archive, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatCurrency } from '../utils/currency';
 import { exportToPDF, exportToExcel, exportToCSVForAccounting } from '../utils/exportData';
@@ -13,6 +12,7 @@ import {
     AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, 
     BarChart, Bar, CartesianGrid, Cell
 } from 'recharts';
+import { useSubscriptionStore } from '../store/useSubscriptionStore';
 
 export default function Analytics() {
     const navigate = useNavigate();
@@ -204,15 +204,6 @@ export default function Analytics() {
                 <div>
                     <h1 className="text-4xl font-black text-foreground tracking-tight">{t.stats}</h1>
                     <p className="text-sm text-muted-foreground font-medium mt-1">{language === 'en' ? 'Performance overview' : 'Ikhtisar performa'}</p>
-                    {(currentTier === 'pro' || currentTier === 'business') && (
-                        <button
-                            onClick={() => navigate('/refunds')}
-                            className="mt-2 inline-flex items-center gap-1.5 bg-primary/10 text-primary text-xs font-bold px-3 py-1.5 rounded-full border border-primary/20 hover:bg-primary/20 transition-all"
-                        >
-                            <RotateCcw size={12} />
-                            Process Refund
-                        </button>
-                    )}
                 </div>
 
                 <div className="relative">

@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useInventoryStore } from '../store/useInventoryStore';
 import { useSettingsStore } from '../store/useSettingsStore';
+import { useSubscriptionStore } from '../store/useSubscriptionStore';
 import { translations } from '../utils/translations';
-import { TrendingUp, Package, AlertTriangle, DollarSign, Pencil } from 'lucide-react';
+import { TrendingUp, Package, AlertTriangle, DollarSign, Pencil, RotateCcw, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { formatCurrency } from '../utils/currency';
 
@@ -52,10 +54,14 @@ function StatCard({ icon: Icon, label, value, color, delay, onClick, isClickable
 }
 
 export default function Dashboard() {
+    const navigate = useNavigate();
     const items = useInventoryStore((state) => state.items);
     const recentActivity = useInventoryStore((state) => state.recentActivity || []);
     const { language } = useSettingsStore();
+    const { currentTier } = useSubscriptionStore();
     const t = translations[language];
+
+    const isPro = currentTier === 'pro' || currentTier === 'business';
 
     // Toggle state specifically for the low/no stock card
     const [showNoStock, setShowNoStock] = useState(false);
@@ -116,6 +122,29 @@ export default function Dashboard() {
                     activeIndex={showNoStock ? 1 : 0}
                 />
             </div>
+
+            {isPro && (
+                <div className="mt-8">
+                    <h3 className="font-bold text-lg mb-4 text-foreground">Pro Actions</h3>
+                    <motion.button
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        onClick={() => navigate('/refunds')}
+                        className="w-full p-5 rounded-2xl bg-zinc-100 dark:bg-zinc-800/50 border border-border flex items-center justify-between group hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-all"
+                    >
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-xl bg-orange-500 flex items-center justify-center text-white shadow-lg shadow-orange-500/20">
+                                <RotateCcw size={24} />
+                            </div>
+                            <div className="text-left">
+                                <h4 className="font-bold text-foreground">Refunds & Returns</h4>
+                                <p className="text-xs text-muted-foreground">Process customer returns and restock items</p>
+                            </div>
+                        </div>
+                        <ChevronRight size={20} className="text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                    </motion.button>
+                </div>
+            )}
 
             <div className="mt-8">
                 <h3 className="font-bold text-lg mb-4 text-foreground">{t.recentActivity}</h3>
