@@ -198,12 +198,12 @@ export default function Analytics() {
     const deadStockList = getDeadStock(60);
 
     return (
-        <div className="p-6 pb-24" onClick={() => setIsDropdownOpen(false)}>
+        <div className="p-4 sm:p-6 md:p-8 pb-32 w-full max-w-7xl mx-auto" onClick={() => setIsDropdownOpen(false)}>
             {/* Header Section */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 mt-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 mt-2 sm:mt-4">
                 <div>
-                    <h1 className="text-4xl font-black text-foreground tracking-tight">{t.stats}</h1>
-                    <p className="text-sm text-muted-foreground font-medium mt-1">{language === 'en' ? 'Performance overview' : 'Ikhtisar performa'}</p>
+                    <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-foreground tracking-tight">{t.stats}</h1>
+                    <p className="text-xs sm:text-sm text-muted-foreground font-medium mt-1">{language === 'en' ? 'Performance overview' : 'Ikhtisar performa'}</p>
                 </div>
 
                 <div className="relative">
@@ -245,23 +245,23 @@ export default function Analytics() {
             </div>
 
             {/* Hero Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-8">
                 <motion.div 
                     whileHover={{ y: -4, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)' }}
                     onClick={() => setHistoryModal('revenue')}
-                    className="p-5 bg-zinc-900 dark:bg-zinc-950 rounded-3xl text-left relative overflow-hidden group cursor-pointer border border-white/10 shadow-xl"
+                    className="p-5 sm:p-6 bg-zinc-900 dark:bg-zinc-950 rounded-[2rem] text-left relative overflow-hidden group cursor-pointer border border-white/10 shadow-xl flex flex-col justify-between min-h-[160px]"
                 >
-                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-all duration-700 -rotate-12 group-hover:rotate-0 text-white">
-                        <TrendingUp size={100} />
+                    <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-all duration-700 -rotate-12 group-hover:rotate-0 text-white pointer-events-none">
+                        <TrendingUp size={120} className="transform scale-150 sm:scale-100" />
                     </div>
-                    <div className="relative z-10">
-                        <span className="inline-flex items-center gap-2 text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-4 bg-white/5 px-3 py-1 rounded-full border border-white/5">
+                    <div className="relative z-10 flex flex-col h-full justify-between">
+                        <span className="inline-flex self-start items-center gap-2 text-[9px] sm:text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] sm:tracking-[0.3em] mb-6 bg-white/5 px-3 py-1.5 rounded-full border border-white/5">
                             <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                             {t.todaysRevenue}
                         </span>
-                        <div className="flex items-end gap-3">
-                            <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tighter transition-all group-hover:tracking-normal">{formatCurrency(todaysRevenue)}</h2>
-                            <span className="text-emerald-400 text-xs font-bold mb-2">+12%</span>
+                        <div className="flex flex-col lg:flex-row lg:items-end gap-1 lg:gap-3">
+                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tighter transition-all group-hover:tracking-normal truncate min-w-0 pb-1">{formatCurrency(todaysRevenue)}</h2>
+                            <span className="text-emerald-400 text-[10px] sm:text-xs font-bold lg:mb-2 shrink-0">+12%</span>
                         </div>
                     </div>
                 </motion.div>
@@ -269,19 +269,19 @@ export default function Analytics() {
                 <motion.div
                     whileHover={{ y: -4, boxShadow: '0 25px 50px -12px rgba(16, 185, 129, 0.2)' }}
                     onClick={() => setHistoryModal('profit')}
-                    className="p-5 bg-emerald-500 rounded-3xl text-left relative overflow-hidden group cursor-pointer shadow-xl shadow-emerald-500/20"
+                    className="p-5 sm:p-6 bg-emerald-500 rounded-[2rem] text-left relative overflow-hidden group cursor-pointer shadow-xl shadow-emerald-500/20 flex flex-col justify-between min-h-[160px]"
                 >
-                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-all duration-700 -rotate-12 group-hover:rotate-0 text-white">
-                        <TrendingUp size={100} />
+                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-all duration-700 -rotate-12 group-hover:rotate-0 text-white pointer-events-none">
+                        <TrendingUp size={120} className="transform scale-150 sm:scale-100" />
                     </div>
-                    <div className="relative z-10">
-                        <span className="inline-flex items-center gap-2 text-[10px] font-black text-emerald-100 uppercase tracking-[0.3em] mb-4 bg-black/10 px-3 py-1 rounded-full">
+                    <div className="relative z-10 flex flex-col h-full justify-between">
+                        <span className="inline-flex self-start items-center gap-2 text-[9px] sm:text-[10px] font-black text-emerald-100 uppercase tracking-[0.2em] sm:tracking-[0.3em] mb-6 bg-black/10 px-3 py-1.5 rounded-full">
                             <div className="w-1.5 h-1.5 rounded-full bg-white" />
                             {t.todaysProfit}
                         </span>
-                        <div className="flex items-end gap-3">
-                            <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tighter transition-all group-hover:tracking-normal">{formatCurrency(todaysProfit)}</h2>
-                            <span className="text-white/80 text-xs font-bold mb-2">Target reached</span>
+                        <div className="flex flex-col lg:flex-row lg:items-end gap-1 lg:gap-3">
+                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-tighter transition-all group-hover:tracking-normal truncate min-w-0 pb-1">{formatCurrency(todaysProfit)}</h2>
+                            <span className="text-white/80 text-[10px] sm:text-xs font-bold lg:mb-2 shrink-0">Target reached</span>
                         </div>
                     </div>
                 </motion.div>
@@ -391,7 +391,7 @@ export default function Analytics() {
                                             
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex justify-between items-start mb-1">
-                                                    <h4 className="font-black text-foreground text-xl tracking-tight leading-tight truncate pr-2 group-hover:text-primary transition-colors">{item.name}</h4>
+                                                    <h4 className="font-black text-foreground text-lg sm:text-xl tracking-tight leading-tight truncate pr-2 group-hover:text-primary transition-colors">{item.name}</h4>
                                                     <Check size={16} className="text-primary shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                                                 </div>
                                                 
