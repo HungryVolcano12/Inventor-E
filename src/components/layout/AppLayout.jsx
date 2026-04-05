@@ -18,7 +18,7 @@ export default function AppLayout() {
 
     return (
         <div className="min-h-screen bg-muted/20 flex justify-center">
-            <div className="w-full max-w-md bg-background min-h-screen shadow-2xl relative pb-20">
+            <div className="w-full max-w-7xl bg-background min-h-screen relative pb-20 md:border-x border-border shadow-2xl md:shadow-none">
                 <main className="h-full overflow-y-auto">
                     <Outlet />
                 </main>
