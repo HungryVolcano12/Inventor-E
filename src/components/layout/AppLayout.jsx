@@ -2,6 +2,8 @@ import { Outlet } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShoppingCart } from 'lucide-react';
 import BottomNav from './BottomNav';
+import SideNav from './SideNav';
+
 import AddItemSheet from '../AddItemSheet';
 import SubscriptionModal from '../SubscriptionModal';
 import CartDrawer from '../CartDrawer';
@@ -17,11 +19,20 @@ export default function AppLayout() {
     const totalCartItems = items.reduce((total, item) => total + item.cartQuantity, 0);
 
     return (
-        <div className="min-h-screen bg-muted/20 flex justify-center">
-            <div className="w-full max-w-7xl bg-background min-h-screen relative pb-20 md:border-x border-border shadow-2xl md:shadow-none">
-                <main className="h-full overflow-y-auto">
-                    <Outlet />
-                </main>
+        <div className="bg-background min-h-[100dvh] flex justify-center">
+            <div className="w-full max-w-7xl md:flex bg-background min-h-[100dvh] relative shadow-2xl md:border-x border-border">
+                {/* Desktop SideNav */}
+                <SideNav className="hidden md:flex w-64 border-r border-border flex-col" />
+                
+                <div className="flex-1 flex flex-col min-w-0">
+
+                    
+                    {/* Ensure padding-bottom on mobile for bottomNav, but normal on Desktop */}
+                    <div className="flex-1 overflow-x-hidden overflow-y-auto pb-24 md:pb-0 relative">
+                        <Outlet />
+                    </div>
+                </div>
+
                 <BottomNav />
                 <AddItemSheet isOpen={isAddSheetOpen} onClose={closeAddSheet} />
                 <SubscriptionModal />
