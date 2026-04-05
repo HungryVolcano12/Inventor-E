@@ -1,4 +1,4 @@
-import { Home, Package, PlusCircle, User, BarChart2, Settings, RotateCcw } from 'lucide-react';
+import { Home, Package, ShoppingCart, User, BarChart2, Settings, RotateCcw } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useUIStore } from '../../store/useUIStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
@@ -36,12 +36,14 @@ export default function BottomNav() {
                 </NavLink>
 
                 <div className="relative -top-5">
-                    <button
-                        onClick={openAddSheet}
-                        className="bg-primary text-white p-3 rounded-full shadow-lg hover:scale-105 transition-transform"
+                    <NavLink
+                        to="/pos"
+                        className={({ isActive }) => 
+                            `flex items-center justify-center bg-primary p-3 rounded-full shadow-[0_0_15px_rgba(var(--primary),0.5)] transition-all ${isActive ? 'text-primary-foreground scale-110 ring-4 ring-primary/30' : 'text-white hover:scale-105'}`
+                        }
                     >
-                        <PlusCircle size={28} />
-                    </button>
+                        <ShoppingCart size={28} />
+                    </NavLink>
                 </div>
 
                 <NavLink

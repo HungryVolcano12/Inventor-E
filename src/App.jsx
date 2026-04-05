@@ -92,7 +92,8 @@ function App() {
       <Routes>
         <Route path="/" element={<AppLayout />}>
           <Route index element={<Dashboard />} />
-          <Route path="inventory" element={<Inventory />} />
+          <Route path="inventory" element={<Inventory mode="manage" />} />
+          <Route path="pos" element={<Inventory mode="pos" />} />
           <Route path="inventory/:id" element={<ItemDetails />} />
           <Route path="inventory/edit/:id" element={<EditItem />} />
           <Route path="analytics" element={<Analytics />} />

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useInventoryStore } from '../store/useInventoryStore';
 import { useSettingsStore } from '../store/useSettingsStore';
@@ -15,7 +15,7 @@ import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 
-export default function Inventory() {
+export default function Inventory({ mode = 'manage' }) {
     const navigate = useNavigate();
     const { items, getFilteredItems, setSearchQuery, deleteItem, deleteItems, customCategories, addCategory } = useInventoryStore();
     const { language } = useSettingsStore();
@@ -25,7 +25,11 @@ export default function Inventory() {
     const filteredItems = getFilteredItems();
     const [activeCategory, setActiveCategory] = useState('All');
     const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
-    const [globalMode, setGlobalMode] = useState('pos'); // 'pos' | 'manage'
+    const [globalMode, setGlobalMode] = useState(mode);
+
+    useEffect(() => {
+        setGlobalMode(mode);
+    }, [mode]);
 
     const { currentShift } = useShiftStore();
     const { currentTier } = useSubscriptionStore();
@@ -174,6 +178,16 @@ export default function Inventory() {
                                 </button>
                             )}
 
+                            {globalMode === 'pos' && requireShift && isRegisterOpen && (
+                                <button
+                                    onClick={() => setIsShiftModalOpen(true)}
+                                    className="px-3 py-1.5 rounded-full border border-red-200 bg-red-50 text-red-600 text-sm font-bold hover:shadow-sm transition-all active:scale-90 shrink-0"
+                                    title="Close Register"
+                                >
+                                    Close Register
+                                </button>
+                            )}
+
                             {globalMode === 'manage' && (
                                 <>
                                     {isManager() && (
@@ -218,38 +232,6 @@ export default function Inventory() {
                         </>
                     )}
                 </div>
-
-                {/* Mode Toggle */}
-                {!isSelectionMode && (
-                    <div className="flex justify-center mt-4">
-                        <div className="bg-muted p-1 rounded-xl inline-flex text-sm font-medium shadow-inner border border-border">
-                            <button
-                                onClick={() => setGlobalMode('pos')}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${globalMode === 'pos' ? 'bg-background shadow-sm text-primary font-bold' : 'text-muted-foreground hover:text-foreground'}`}
-                            >
-                                <ShoppingCart size={16} />
-                                POS Mode
-                            </button>
-                            {requireShift && isRegisterOpen && (
-                                <button
-                                    onClick={() => setIsShiftModalOpen(true)}
-                                    className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
-                                >
-                                    Close Register
-                                </button>
-                            )}
-                            {!isCashier() && (
-                                <button
-                                    onClick={() => setGlobalMode('manage')}
-                                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${globalMode === 'manage' ? 'bg-background shadow-sm text-foreground font-bold' : 'text-muted-foreground hover:text-foreground'}`}
-                                >
-                                    <Settings2 size={16} />
-                                    Edit Items
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                )}
 
                 {/* Categories Scroll */}
                 {!isSelectionMode && (
