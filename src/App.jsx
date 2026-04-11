@@ -1,18 +1,4 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import AppLayout from './components/layout/AppLayout';
-import Dashboard from './pages/Dashboard';
-import Inventory from './pages/Inventory';
-import ItemDetails from './pages/ItemDetails';
-import EditItem from './pages/EditItem';
-import Analytics from './pages/Analytics';
-import Settings from './pages/Settings';
-import TeamManagement from './pages/TeamManagement';
-import Refunds from './pages/Refunds';
-import Auth from './pages/Auth';
-import JoinStore from './pages/JoinStore';
-import Customers from './pages/Customers';
-import Suppliers from './pages/Suppliers';
 import { useSettingsStore } from './store/useSettingsStore';
 import { useAuthStore } from './store/useAuthStore';
 import { useInventoryStore } from './store/useInventoryStore';

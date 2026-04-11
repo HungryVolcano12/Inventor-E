@@ -1,8 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from 'react';
 import { useCustomerStore } from '../store/useCustomerStore';
 import { useAuthStore } from '../store/useAuthStore';
-import { Users, Plus, Phone, Mail, Search, Edit2, Trash2, X, Star, Loader2 } from 'lucide-react';
 import { formatCurrency } from '../utils/currency';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { toast } from 'sonner';

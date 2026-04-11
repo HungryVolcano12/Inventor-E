@@ -3,10 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useInventoryStore } from '../store/useInventoryStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { translations } from '../utils/translations';
-import { ChevronLeft, Share, Heart, DollarSign } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { formatCurrency } from '../utils/currency';
-import SellModal from '../components/SellModal';
 
 export default function ItemDetails() {
     const { id } = useParams();

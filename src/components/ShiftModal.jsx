@@ -1,6 +1,4 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, Unlock, DollarSign, X, FileText, MessageSquare, TrendingUp, AlertCircle } from 'lucide-react';
+import { useState } from 'react';
 import { useShiftStore } from '../store/useShiftStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useInventoryStore } from '../store/useInventoryStore';

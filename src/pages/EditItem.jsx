@@ -1,7 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ChevronLeft, Check, Upload, Image as ImageIcon, X } from 'lucide-react';
 import { useInventoryStore } from '../store/useInventoryStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useAuthStore } from '../store/useAuthStore';
@@ -37,6 +35,7 @@ export default function EditItem() {
 
     useEffect(() => {
         if (existingItem) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setFormData({
                 name: existingItem.name,
                 category: existingItem.category,

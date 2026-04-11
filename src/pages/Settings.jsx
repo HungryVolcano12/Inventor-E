@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Moon, Sun, Type, Globe, ChevronRight, Users, Palette, Check, MessageSquare, Bell, LogOut, Store, ShieldCheck, Pencil, X, Trash2, Printer, Upload, Star, Truck } from 'lucide-react';
+import { Moon, Sun, Type, Globe, Users, Palette, MessageSquare, Bell, Star, Truck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useSettingsStore } from '../store/useSettingsStore';

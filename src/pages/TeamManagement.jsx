@@ -1,6 +1,4 @@
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, UserPlus, Shield, MoreVertical, X, Check, Copy, Link as LinkIcon, Mail } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSubscriptionStore } from '../store/useSubscriptionStore';
 import { useSettingsStore } from '../store/useSettingsStore';

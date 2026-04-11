@@ -1,15 +1,6 @@
-import { Outlet } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingCart } from 'lucide-react';
-import BottomNav from './BottomNav';
-import SideNav from './SideNav';
 
-import AddItemSheet from '../AddItemSheet';
-import SubscriptionModal from '../SubscriptionModal';
-import CartDrawer from '../CartDrawer';
 import { useUIStore } from '../../store/useUIStore';
 import { useCartStore } from '../../store/useCartStore';
-import { Toaster } from 'sonner';
 
 export default function AppLayout() {
     const { isAddSheetOpen, closeAddSheet } = useUIStore();

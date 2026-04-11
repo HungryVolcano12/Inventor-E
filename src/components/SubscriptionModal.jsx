@@ -1,7 +1,5 @@
-import { motion, AnimatePresence } from 'framer-motion';
 import { useSubscriptionStore } from '../store/useSubscriptionStore';
 import { useSettingsStore } from '../store/useSettingsStore';
-import { X, Check } from 'lucide-react';
 import { translations } from '../utils/translations'; // We'll add translations for this later as needed
 
 const tiers = [
@@ -35,7 +33,7 @@ const tiers = [
 ];
 
 export default function SubscriptionModal() {
-    const { isPaywallOpen, closePaywall, upgradeTier, paywallReason, currentTier } = useSubscriptionStore();
+    const { isPaywallOpen, closePaywall, upgradeTier, paywallReason, currentTier, isLoadingCheckout } = useSubscriptionStore();
     const { language } = useSettingsStore();
     const t = translations[language];
 
@@ -124,16 +122,18 @@ export default function SubscriptionModal() {
                                         </ul>
 
                                         <button
-                                            onClick={() => !isCurrentTier && upgradeTier(tier.id)}
-                                            disabled={isCurrentTier}
+                                            onClick={() => !isCurrentTier && !isLoadingCheckout && upgradeTier(tier.id)}
+                                            disabled={isCurrentTier || isLoadingCheckout}
                                             className={`w-full py-3 px-4 rounded-xl font-bold transition-all ${isCurrentTier
                                                 ? 'bg-muted text-muted-foreground cursor-not-allowed opacity-70'
-                                                : tier.highlight
-                                                    ? 'bg-white text-primary hover:bg-gray-100 shadow-lg'
-                                                    : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                                                : isLoadingCheckout
+                                                    ? 'bg-muted text-muted-foreground cursor-wait opacity-80'
+                                                    : tier.highlight
+                                                        ? 'bg-white text-primary hover:bg-gray-100 shadow-lg'
+                                                        : 'bg-primary text-primary-foreground hover:bg-primary/90'
                                                 }`}
                                         >
-                                            {isCurrentTier ? t.currentPlanBtn : tier.id === 'pro' ? t.upgradeToPro : tier.id === 'business' ? t.upgradeToBusiness : tier.buttonText}
+                                            {isLoadingCheckout && !isCurrentTier ? 'Redirecting...' : isCurrentTier ? t.currentPlanBtn : tier.id === 'pro' ? t.upgradeToPro : tier.id === 'business' ? t.upgradeToBusiness : tier.buttonText}
                                         </button>
                                     </div>
                                 );

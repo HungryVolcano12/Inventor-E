@@ -1,6 +1,4 @@
 import { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, Upload, Image as ImageIcon } from 'lucide-react';
 import { useInventoryStore } from '../store/useInventoryStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useSubscriptionStore } from '../store/useSubscriptionStore';
@@ -42,6 +40,7 @@ export default function AddItemSheet({ isOpen, onClose }) {
     // Reset form when sheet is opened (ensure clean slate)
     useEffect(() => {
         if (isOpen) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setFormData({
                 name: '',
                 category: '',

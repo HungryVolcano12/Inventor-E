@@ -1,9 +1,6 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Pencil, Trash2, DollarSign, CheckCircle2, Circle, AlertTriangle, ShoppingCart } from 'lucide-react';
 import clsx from 'clsx';
 import { formatCurrency } from '../utils/currency';
-import SellModal from './SellModal';
 import { useCartStore } from '../store/useCartStore';
 
 export default function InventoryCard({ item, onEdit, onDelete, t, viewMode = 'grid', globalMode = 'pos', isSelectionMode = false, isSelected = false, onToggleSelect }) {
