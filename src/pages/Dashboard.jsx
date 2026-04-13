@@ -4,7 +4,8 @@ import { useInventoryStore } from '../store/useInventoryStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useSubscriptionStore } from '../store/useSubscriptionStore';
 import { translations } from '../utils/translations';
-import { TrendingUp, Package, AlertTriangle, DollarSign } from 'lucide-react';
+import { TrendingUp, Package, AlertTriangle, DollarSign, Pencil, RotateCcw, ChevronRight } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { formatCurrency } from '../utils/currency';
 
 function StatCard({ icon: Icon, label, value, color, delay, onClick, isClickable = false, onSwipeLeft, onSwipeRight, showIndicators = false, activeIndex = 0 }) {

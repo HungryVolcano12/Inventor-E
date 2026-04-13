@@ -1,3 +1,5 @@
+import { Home, Package, ShoppingCart, User, BarChart2, Settings, RotateCcw } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
 import { useUIStore } from '../../store/useUIStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { useSubscriptionStore } from '../../store/useSubscriptionStore';

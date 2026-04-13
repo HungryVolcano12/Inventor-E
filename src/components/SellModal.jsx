@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Check, DollarSign } from 'lucide-react';
 import { useInventoryStore } from '../store/useInventoryStore';
 import { formatCurrency } from '../utils/currency';
 

@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useSupplierStore } from '../store/useSupplierStore';
 import { useAuthStore } from '../store/useAuthStore';
+import { Truck, Plus, Phone, Mail, Search, Edit2, Trash2, X, MapPin, Printer, Loader2 } from 'lucide-react';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { generatePO } from '../utils/exportData';
 import { toast } from 'sonner';

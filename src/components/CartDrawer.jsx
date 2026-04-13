@@ -1,6 +1,19 @@
 import React, { useState } from 'react';
-
-
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+    X, 
+    ShoppingCart, 
+    Trash2, 
+    Plus, 
+    Minus, 
+    Receipt, 
+    Tag, 
+    Percent, 
+    DollarSign,
+    MessageCircle,
+    CheckCircle2,
+    Loader2
+} from 'lucide-react';
 import { useCartStore } from '../store/useCartStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useShiftStore } from '../store/useShiftStore';

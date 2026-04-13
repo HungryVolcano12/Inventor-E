@@ -8,30 +8,18 @@ export const useSubscriptionStore = create(
             currentTier: 'free', // 'free', 'pro', 'business'
             isPaywallOpen: false,
             paywallReason: null, // e.g., 'item_limit_reached', 'role_limit_reached'
-            isLoadingCheckout: false,
 
             upgradeTier: async (tier) => {
-                set({ isLoadingCheckout: true });
+                set({ currentTier: tier, isPaywallOpen: false, paywallReason: null });
+                // Persist tier to Supabase so staff see the owner's plan
                 try {
                     const { useAuthStore } = await import('./useAuthStore');
                     const { storeId, userRole } = useAuthStore.getState();
                     if (storeId && userRole === 'owner') {
                         const { supabase } = await import('../lib/supabase');
-                        const { data, error } = await supabase.functions.invoke('create-stripe-checkout', {
-                            body: { price_id: tier, store_id: storeId }
-                        });
-                        
-                        if (error) {
-                            console.error('Checkout error:', error);
-                        } else if (data?.url) {
-                            window.location.href = data.url;
-                        }
+                        await supabase.rpc('update_store_tier', { p_store_id: storeId, p_tier: tier });
                     }
-                } catch (e) {
-                    console.error('Checkout error:', e);
-                } finally {
-                    set({ isLoadingCheckout: false });
-                }
+                } catch { /* non-critical, ignore */ }
             },
 
             openPaywall: (reason) => set({ isPaywallOpen: true, paywallReason: reason }),

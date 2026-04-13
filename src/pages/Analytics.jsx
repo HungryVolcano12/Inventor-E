@@ -4,9 +4,14 @@ import { useInventoryStore } from '../store/useInventoryStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { translations } from '../utils/translations';
+import { AlertTriangle, TrendingUp, ChevronDown, Check, HelpCircle, X, Pencil, Download, FileText, Table, Archive, Users } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { formatCurrency } from '../utils/currency';
 import { exportToPDF, exportToExcel, exportToCSVForAccounting } from '../utils/exportData';
-
+import { 
+    AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, 
+    BarChart, Bar, CartesianGrid, Cell
+} from 'recharts';
 import { useSubscriptionStore } from '../store/useSubscriptionStore';
 
 export default function Analytics() {
