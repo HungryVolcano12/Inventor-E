@@ -130,7 +130,7 @@ export default function Dashboard() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         onClick={() => navigate('/refunds')}
-                        className="w-full p-5 rounded-2xl bg-zinc-100 dark:bg-zinc-800/50 border border-border flex items-center justify-between group hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-all"
+                        className="w-full p-5 rounded-2xl bg-card border border-border flex items-center justify-between group hover:bg-muted/50 transition-all"
                     >
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 rounded-xl bg-orange-500 flex items-center justify-center text-white shadow-lg shadow-orange-500/20">
