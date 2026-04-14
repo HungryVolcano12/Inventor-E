@@ -11,33 +11,59 @@ import { useSettingsStore } from '../store/useSettingsStore';
  */
 export const generateShiftReport = async (shift, transactions = []) => {
     const { storeName } = useAuthStore.getState();
-    const { receiptAddress, receiptFooter } = useSettingsStore.getState();
+    const { receiptLogo, receiptAddress, receiptFooter } = useSettingsStore.getState();
 
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a5' });
     const pageWidth = doc.internal.pageSize.getWidth();
     const name = storeName || 'Inventor-E Store';
 
-    // ── Header ──────────────────────────────────────────────────────────────
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.text(name, pageWidth / 2, 18, { align: 'center' });
+    let currentY = 18;
 
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    if (receiptAddress) {
-        const split = doc.splitTextToSize(receiptAddress, pageWidth - 20);
-        doc.text(split, pageWidth / 2, 25, { align: 'center' });
+    // ── Logo ────────────────────────────────────────────────────────────────
+    if (receiptLogo) {
+        const logoWidth = 28;
+        const logoHeight = 28;
+        const logoX = (pageWidth - logoWidth) / 2;
+        doc.addImage(receiptLogo, 'PNG', logoX, 8, logoWidth, logoHeight);
+        currentY = 44; 
     }
 
-    doc.setFontSize(14);
+    // ── Header ──────────────────────────────────────────────────────────────
+    doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
-    doc.text('END OF SHIFT REPORT', pageWidth / 2, 35, { align: 'center' });
-    doc.line(10, 38, pageWidth - 10, 38);
+    doc.setTextColor(40, 40, 40);
+    doc.text(name, pageWidth / 2, currentY, { align: 'center' });
+
+    currentY += 6;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(120, 120, 120);
+    if (receiptAddress) {
+        const split = doc.splitTextToSize(receiptAddress, pageWidth - 20);
+        doc.text(split, pageWidth / 2, currentY, { align: 'center' });
+        currentY += (split.length * 5) + 2;
+    } else {
+        currentY += 2;
+    }
+
+    currentY += 8;
+    
+    // Sleek background behind title
+    doc.setFillColor(245, 245, 248);
+    doc.rect(10, currentY - 7, pageWidth - 20, 12, 'F');
+    
+    doc.setFontSize(13);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('END OF SHIFT REPORT', pageWidth / 2, currentY + 1.5, { align: 'center' });
+    
+    currentY += 10;
 
     // ── Shift Details ────────────────────────────────────────────────────────
-    let y = 44;
+    let y = currentY;
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
+    doc.setTextColor(60, 60, 60);
 
     const startTime = shift.start_time ? new Date(shift.start_time) : new Date();
     const endTime   = shift.end_time   ? new Date(shift.end_time)   : new Date();
@@ -52,13 +78,14 @@ export const generateShiftReport = async (shift, transactions = []) => {
 
     details.forEach(([label, val]) => {
         doc.setFont('helvetica', 'bold');
-        doc.text(label, 12, y);
+        doc.text(label, 14, y);
         doc.setFont('helvetica', 'normal');
-        doc.text(val, 50, y);
+        doc.text(val, 45, y);
         y += 6;
     });
 
     y += 2;
+    doc.setDrawColor(220, 220, 220);
     doc.line(10, y, pageWidth - 10, y);
     y += 6;
 
@@ -93,37 +120,38 @@ export const generateShiftReport = async (shift, transactions = []) => {
         startY: y,
         body: summaryRows,
         theme: 'plain',
-        bodyStyles: { fontSize: 9 },
+        bodyStyles: { fontSize: 10, textColor: 60 },
         columnStyles: {
-            0: { cellWidth: 60, fontStyle: 'normal' },
-            1: { cellWidth: 50, halign: 'right', fontStyle: 'bold' },
+            0: { cellWidth: 70, fontStyle: 'normal' },
+            1: { cellWidth: 40, halign: 'right', fontStyle: 'bold', textColor: 0 },
         },
-        margin: { left: 12, right: 12 },
+        margin: { left: 14, right: 14 },
     });
 
-    y = doc.lastAutoTable.finalY + 6;
+    y = doc.lastAutoTable.finalY + 8;
 
     // ── Payment Method Breakdown ─────────────────────────────────────────────
     if (Object.keys(byMethod).length > 0) {
         doc.setFontSize(11);
         doc.setFont('helvetica', 'bold');
-        doc.text('Payment Breakdown', 12, y);
+        doc.setTextColor(30, 30, 30);
+        doc.text('Payment Breakdown', 14, y);
         y += 4;
 
         autoTable(doc, {
             startY: y,
             head: [['Method', 'Amount']],
             body: Object.entries(byMethod).map(([m, v]) => [m, formatCurrency(v)]),
-            theme: 'plain',
-            headStyles: { fontStyle: 'bold', fontSize: 9, textColor: 60 },
-            bodyStyles: { fontSize: 9 },
+            theme: 'grid',
+            headStyles: { fontStyle: 'bold', fontSize: 9, textColor: 0, fillColor: [240, 240, 245], lineColor: 255 },
+            bodyStyles: { fontSize: 9, textColor: 60, lineColor: 255 },
             columnStyles: {
-                0: { cellWidth: 60 },
-                1: { cellWidth: 50, halign: 'right' },
+                0: { cellWidth: 70 },
+                1: { cellWidth: 40, halign: 'right', fontStyle: 'bold' },
             },
-            margin: { left: 12, right: 12 },
+            margin: { left: 14, right: 14 },
         });
-        y = doc.lastAutoTable.finalY + 6;
+        y = doc.lastAutoTable.finalY + 8;
     }
 
     // ── Cash Reconciliation ──────────────────────────────────────────────────
@@ -135,7 +163,8 @@ export const generateShiftReport = async (shift, transactions = []) => {
 
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.text('Cash Reconciliation', 12, y);
+    doc.setTextColor(30, 30, 30);
+    doc.text('Cash Reconciliation', 14, y);
     y += 4;
 
     autoTable(doc, {
@@ -147,20 +176,27 @@ export const generateShiftReport = async (shift, transactions = []) => {
             ['Actual Cash Counted', formatCurrency(actualCash)],
             [overShort >= 0 ? 'Over' : 'Short', `${overShort >= 0 ? '+' : ''}${formatCurrency(Math.abs(overShort))}`],
         ],
-        theme: 'plain',
-        bodyStyles: { fontSize: 9 },
+        theme: 'grid',
+        bodyStyles: { fontSize: 9, textColor: 60, lineColor: 255 },
         columnStyles: {
-            0: { cellWidth: 60 },
-            1: { cellWidth: 50, halign: 'right' },
+            0: { cellWidth: 70 },
+            1: { cellWidth: 40, halign: 'right', fontStyle: 'bold', textColor: overShort >= 0 ? [34, 197, 94] : [239, 68, 68] },
         },
-        margin: { left: 12, right: 12 },
+        willDrawCell: (data) => {
+            // Only color the last row
+            if (data.row.index !== 4 && data.column.index === 1) {
+                doc.setTextColor(0, 0, 0); // Default bold black for amounts
+            }
+        },
+        margin: { left: 14, right: 14 },
     });
 
-    y = doc.lastAutoTable.finalY + 10;
+    y = doc.lastAutoTable.finalY + 14;
 
     // ── Footer ────────────────────────────────────────────────────────────────
     doc.setFontSize(8);
     doc.setFont('helvetica', 'italic');
+    doc.setTextColor(150, 150, 150);
     const footer = receiptFooter || 'Generated by Inventor-E';
     doc.text(footer, pageWidth / 2, y, { align: 'center' });
 

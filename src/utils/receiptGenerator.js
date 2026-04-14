@@ -20,39 +20,44 @@ export const generateReceipt = async ({ items, subtotal, discount, tax, total, t
     const storeAddress = receiptAddress || "Generated via Inventor-E App";
 
     // Header Structure
-    let currentY = 20;
+    let currentY = 18;
 
     if (receiptLogo) {
         // Center the logo
-        const logoWidth = 30;
-        const logoHeight = 30; // Assuming square-ish logo
+        const logoWidth = 28;
+        const logoHeight = 28;
         const logoX = (pageWidth - logoWidth) / 2;
-        doc.addImage(receiptLogo, 'JPEG', logoX, 10, logoWidth, logoHeight);
-        currentY = 46; // Push text down below the logo
+        doc.addImage(receiptLogo, 'PNG', logoX, 8, logoWidth, logoHeight);
+        currentY = 44; // Push text down below the logo
     }
 
-    doc.setFontSize(20);
+    doc.setFontSize(22);
     doc.setFont("helvetica", "bold");
+    doc.setTextColor(40, 40, 40);
     doc.text(storeName, pageWidth / 2, currentY, { align: 'center' });
     
     currentY += 6;
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
+    doc.setTextColor(120, 120, 120);
     
     // Split address into multiple lines if needed
     const splitAddress = doc.splitTextToSize(storeAddress, pageWidth - 20);
     doc.text(splitAddress, pageWidth / 2, currentY, { align: 'center' });
-    currentY += (splitAddress.length * 5) + 5;
+    currentY += (splitAddress.length * 5) + 6;
     
     // Receipt Details
+    doc.setTextColor(80, 80, 80);
+    doc.setFontSize(9);
     const date = new Date();
-    doc.text(`Date: ${date.toLocaleDateString()} ${date.toLocaleTimeString()}`, 10, currentY);
+    doc.text(`Date: ${date.toLocaleDateString()} ${date.toLocaleTimeString()}`, 14, currentY);
     currentY += 6;
-    doc.text(`Receipt #: ${transactionId || Math.random().toString(36).substring(2, 9).toUpperCase()}`, 10, currentY);
+    doc.text(`Receipt #: ${transactionId || Math.random().toString(36).substring(2, 9).toUpperCase()}`, 14, currentY);
 
     // Items Header
     currentY += 6;
-    doc.line(10, currentY, pageWidth - 10, currentY);
+    doc.setDrawColor(220, 220, 220);
+    doc.line(14, currentY, pageWidth - 14, currentY);
     currentY += 4;
 
     // Prep Table Data
@@ -68,49 +73,63 @@ export const generateReceipt = async ({ items, subtotal, discount, tax, total, t
         head: [['Item', 'Qty x Price', 'Amount']],
         body: tableData,
         theme: 'plain',
-        headStyles: { fontStyle: 'bold', textColor: 20 },
-        bodyStyles: { fontSize: 9 },
+        headStyles: { fontStyle: 'bold', textColor: 0, fontSize: 9 },
+        bodyStyles: { fontSize: 9, textColor: 60 },
         columnStyles: {
-            0: { cellWidth: 55 },
-            1: { cellWidth: 45 },
-            2: { cellWidth: 30, halign: 'right' }
+            0: { cellWidth: 55, fontStyle: 'bold' },
+            1: { cellWidth: 40 },
+            2: { cellWidth: 35, halign: 'right', fontStyle: 'bold', textColor: 0 }
         },
-        margin: { left: 10, right: 10 }
+        margin: { left: 14, right: 14 }
     });
 
-    const finalY = doc.lastAutoTable.finalY + 10;
+    const finalY = doc.lastAutoTable.finalY + 8;
     
-    doc.line(10, finalY - 5, pageWidth - 10, finalY - 5);
+    doc.setDrawColor(220, 220, 220);
+    doc.line(14, finalY - 4, pageWidth - 14, finalY - 4);
 
     // Totals Section
     doc.setFontSize(10);
-    doc.text("Subtotal:", pageWidth - 50, finalY);
-    doc.text(formatCurrency(subtotal), pageWidth - 10, finalY, { align: 'right' });
+    doc.setTextColor(60, 60, 60);
+    doc.text("Subtotal:", pageWidth - 55, finalY);
+    doc.setTextColor(0, 0, 0);
+    doc.text(formatCurrency(subtotal), pageWidth - 14, finalY, { align: 'right' });
 
     currentY = finalY;
 
     if (discount > 0) {
         currentY += 6;
-        doc.text("Discount:", pageWidth - 50, currentY);
-        doc.text(`-${formatCurrency(discount)}`, pageWidth - 10, currentY, { align: 'right' });
+        doc.setTextColor(60, 60, 60);
+        doc.text("Discount:", pageWidth - 55, currentY);
+        doc.setTextColor(239, 68, 68);
+        doc.text(`-${formatCurrency(discount)}`, pageWidth - 14, currentY, { align: 'right' });
     }
 
     if (tax > 0) {
         currentY += 6;
-        doc.text("Tax:", pageWidth - 50, currentY);
-        doc.text(`+${formatCurrency(tax)}`, pageWidth - 10, currentY, { align: 'right' });
+        doc.setTextColor(60, 60, 60);
+        doc.text("Tax:", pageWidth - 55, currentY);
+        doc.setTextColor(0, 0, 0);
+        doc.text(`+${formatCurrency(tax)}`, pageWidth - 14, currentY, { align: 'right' });
     }
 
     currentY += 8;
+    
+    // Background for TOTAL
+    doc.setFillColor(245, 245, 248);
+    doc.rect(14, currentY - 6, pageWidth - 28, 10, 'F');
+
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
-    doc.text("TOTAL:", pageWidth - 50, currentY);
-    doc.text(formatCurrency(total), pageWidth - 10, currentY, { align: 'right' });
+    doc.setTextColor(0, 0, 0);
+    doc.text("TOTAL:", 18, currentY + 1);
+    doc.text(formatCurrency(total), pageWidth - 18, currentY + 1, { align: 'right' });
 
     // Footer
-    currentY += 15;
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
+    currentY += 18;
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(150, 150, 150);
     const footerText = receiptFooter || "Thank you for your purchase!";
     const splitFooter = doc.splitTextToSize(footerText, pageWidth - 20);
     doc.text(splitFooter, pageWidth / 2, currentY, { align: 'center' });
