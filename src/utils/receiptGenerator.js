@@ -12,8 +12,19 @@ export const generateReceipt = async ({ items, subtotal, discount, tax, total, t
         format: 'a5'
     });
 
-    const { receiptLogo, receiptAddress, receiptFooter } = useSettingsStore.getState();
+    const { receiptLogo, receiptAddress, receiptFooter, color: appColor } = useSettingsStore.getState();
     const { storeName: storeNameFromAuth } = (await import('../store/useAuthStore')).useAuthStore.getState();
+
+    const colors = {
+        pink: [255, 20, 147],
+        red: [239, 68, 68],
+        blue: [59, 130, 246],
+        green: [34, 197, 94],
+        purple: [139, 92, 246],
+        orange: [249, 115, 22],
+    };
+    const themeRGB = colors[appColor] || [59, 130, 246]; // default blue
+
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const storeName = storeNameFromAuth || "Inventor-E Store";
@@ -31,12 +42,16 @@ export const generateReceipt = async ({ items, subtotal, discount, tax, total, t
         currentY = 44; // Push text down below the logo
     }
 
-    doc.setFontSize(22);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(40, 40, 40);
-    doc.text(storeName, pageWidth / 2, currentY, { align: 'center' });
-    
-    currentY += 6;
+    if (!receiptLogo) {
+        doc.setFontSize(22);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(40, 40, 40);
+        doc.text(storeName, pageWidth / 2, currentY, { align: 'center' });
+        currentY += 6;
+    } else {
+        currentY += 2; // Skip duplicate name text to save space and look cleaner
+    }
+
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(120, 120, 120);
@@ -116,12 +131,12 @@ export const generateReceipt = async ({ items, subtotal, discount, tax, total, t
     currentY += 8;
     
     // Background for TOTAL
-    doc.setFillColor(245, 245, 248);
+    doc.setFillColor(...themeRGB);
     doc.rect(14, currentY - 6, pageWidth - 28, 10, 'F');
 
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(0, 0, 0);
+    doc.setTextColor(255, 255, 255);
     doc.text("TOTAL:", 18, currentY + 1);
     doc.text(formatCurrency(total), pageWidth - 18, currentY + 1, { align: 'right' });
 

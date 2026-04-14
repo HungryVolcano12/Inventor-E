@@ -11,7 +11,17 @@ import { useSettingsStore } from '../store/useSettingsStore';
  */
 export const generateShiftReport = async (shift, transactions = []) => {
     const { storeName } = useAuthStore.getState();
-    const { receiptLogo, receiptAddress, receiptFooter } = useSettingsStore.getState();
+    const { receiptLogo, receiptAddress, receiptFooter, color: appColor } = useSettingsStore.getState();
+
+    const colors = {
+        pink: [255, 20, 147],
+        red: [239, 68, 68],
+        blue: [59, 130, 246],
+        green: [34, 197, 94],
+        purple: [139, 92, 246],
+        orange: [249, 115, 22],
+    };
+    const themeRGB = colors[appColor] || [59, 130, 246]; // default blue
 
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a5' });
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -29,12 +39,17 @@ export const generateShiftReport = async (shift, transactions = []) => {
     }
 
     // ── Header ──────────────────────────────────────────────────────────────
-    doc.setFontSize(22);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(40, 40, 40);
-    doc.text(name, pageWidth / 2, currentY, { align: 'center' });
+    if (!receiptLogo) {
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(40, 40, 40);
+        doc.text(name, pageWidth / 2, currentY, { align: 'center' });
+        currentY += 6;
+    } else {
+        // If logo is present, we skip the large name text to avoid redundancy and save space
+        currentY += 2;
+    }
 
-    currentY += 6;
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(120, 120, 120);
@@ -48,13 +63,13 @@ export const generateShiftReport = async (shift, transactions = []) => {
 
     currentY += 8;
     
-    // Sleek background behind title
-    doc.setFillColor(245, 245, 248);
+    // Sleek background behind title using the app theme color
+    doc.setFillColor(...themeRGB);
     doc.rect(10, currentY - 7, pageWidth - 20, 12, 'F');
     
     doc.setFontSize(13);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 0, 0);
+    doc.setTextColor(255, 255, 255); // White text on colored background
     doc.text('END OF SHIFT REPORT', pageWidth / 2, currentY + 1.5, { align: 'center' });
     
     currentY += 10;
