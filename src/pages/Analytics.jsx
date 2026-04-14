@@ -501,7 +501,7 @@ export default function Analytics() {
             {/* Notifications / Alerts Section */}
             <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Low Stock Row */}
-                <div className="bg-orange-50/50 dark:bg-orange-500/5 rounded-3xl p-6 border border-orange-100 dark:border-orange-500/10">
+                <div className="bg-orange-500/10 rounded-3xl p-6 border border-orange-500/20">
                     <div className="flex items-center gap-4 mb-6">
                         <div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center text-white shadow-lg shadow-orange-500/40">
                             <AlertTriangle size={20} />
@@ -515,7 +515,7 @@ export default function Analytics() {
                     <div className="max-h-80 overflow-y-auto pr-2 space-y-4 custom-scrollbar">
                         {lowStockList.length > 0 ? (
                             lowStockList.map((item, idx) => (
-                                <div key={idx} className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-orange-100 dark:border-border shadow-sm">
+                                <div key={idx} className="flex items-center justify-between p-4 bg-card rounded-2xl border border-orange-500/20 shadow-sm">
                                     <div className="flex items-center gap-4">
                                         <div className="w-10 h-10 rounded-xl overflow-hidden grayscale group-hover:grayscale-0 transition-all">
                                             <img src={item.image} alt="" className="w-full h-full object-cover" />
@@ -541,7 +541,7 @@ export default function Analytics() {
 
                 {/* Staff Performance — Pro/Business only */}
                 {(currentTier === 'pro' || currentTier === 'business') && (
-                    <div className="bg-zinc-100/50 dark:bg-zinc-500/5 rounded-3xl p-6 border border-border/50">
+                    <div className="bg-muted/30 rounded-3xl p-6 border border-border/50">
                         <div className="flex items-center gap-4 mb-6">
                             <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-lg">
                                 <Users size={20} />
@@ -587,7 +587,7 @@ export default function Analytics() {
                                         const avg = txCount > 0 ? staff.revenue / txCount : 0;
                                         const pct = topStaff[0].revenue > 0 ? (staff.revenue / topStaff[0].revenue) * 100 : 0;
                                         return (
-                                            <div key={staff.name} className="flex items-center gap-4 p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-border shadow-sm">
+                                            <div key={staff.name} className="flex items-center gap-4 p-4 bg-card rounded-2xl border border-border shadow-sm">
                                                 <span className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm shrink-0 ${
                                                     idx === 0 ? 'bg-amber-400 text-white' :
                                                     idx === 1 ? 'bg-zinc-400 text-white' :
@@ -622,7 +622,7 @@ export default function Analytics() {
                 )}
 
                 {/* Dead Stock Row */}
-                <div className="bg-zinc-100/50 dark:bg-zinc-500/5 rounded-3xl p-6 border border-border/50">
+                <div className="bg-muted/30 rounded-3xl p-6 border border-border/50">
                     <div className="flex items-center gap-4 mb-6">
                         <div className="w-10 h-10 rounded-xl bg-zinc-800 dark:bg-zinc-700 flex items-center justify-center text-white shadow-lg shadow-black/20">
                             <Archive size={20} />
@@ -636,7 +636,7 @@ export default function Analytics() {
                     <div className="max-h-80 overflow-y-auto pr-2 space-y-4 custom-scrollbar">
                         {deadStockList.length > 0 ? (
                             deadStockList.map((item, idx) => (
-                                <div key={idx} className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-border shadow-sm">
+                                <div key={idx} className="flex items-center justify-between p-4 bg-card rounded-2xl border border-border shadow-sm">
                                     <div className="flex items-center gap-4">
                                         <div className="w-10 h-10 rounded-xl overflow-hidden opacity-50">
                                             <img src={item.image} alt="" className="w-full h-full object-cover" />
