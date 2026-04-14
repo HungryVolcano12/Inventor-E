@@ -29,15 +29,17 @@ export const useAuthStore = create(
 
         // Try to restore an existing session — 8s total timeout prevents stale session hangs
         try {
-            const done = new Promise(async (resolve) => {
-                try {
-                    const { data: { session } } = await supabase.auth.getSession();
-                    if (session?.user) {
-                        await get()._loadStoreContext(session.user);
-                        set({ session, user: session.user });
-                    }
-                } catch { /* ignore — listener will handle valid sign-ins */ }
-                resolve();
+            const done = new Promise((resolve) => {
+                (async () => {
+                    try {
+                        const { data: { session } } = await supabase.auth.getSession();
+                        if (session?.user) {
+                            await get()._loadStoreContext(session.user);
+                            set({ session, user: session.user });
+                        }
+                    } catch { /* ignore — listener will handle valid sign-ins */ }
+                    resolve();
+                })();
             });
             await Promise.race([done, new Promise(res => setTimeout(res, 8000))]);
         } catch (err) {

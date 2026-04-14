@@ -11,6 +11,7 @@ import InventoryCard from '../components/InventoryCard';
 import AddItemCard from '../components/AddItemCard';
 import SortFilterMenu from '../components/SortFilterMenu';
 import { Search, LayoutGrid, List as ListIcon, Plus, CheckSquare, Trash2, X, Settings2, ShoppingCart, Upload, Download, RotateCcw } from 'lucide-react';
+import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
