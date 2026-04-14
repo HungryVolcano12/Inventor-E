@@ -435,6 +435,17 @@ export default function Settings() {
                                 placeholder={language === 'en' ? 'Thank you for shopping!\nIG: @mystore - Wifi: guest123' : 'Terima kasih telah berbelanja!\nIG: @mystore'}
                             />
                         </div>
+
+                        {/* Save Info */}
+                        <div className="pt-2">
+                            <button
+                                onClick={() => toast.success(language === 'en' ? 'Receipt configuration saved!' : 'Konfigurasi struk disimpan!')}
+                                className="w-full sm:w-auto bg-primary text-primary-foreground font-semibold px-4 py-2.5 rounded-xl hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <Check size={18} />
+                                {language === 'en' ? 'Save Receipt Branding' : 'Simpan Merek Struk'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </Section>
