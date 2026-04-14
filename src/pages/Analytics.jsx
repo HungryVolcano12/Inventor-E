@@ -379,7 +379,7 @@ export default function Analytics() {
                                                         </div>
                                                     )}
                                                 </div>
-                                                <div className="absolute -top-2 -left-2 w-10 h-10 rounded-2xl bg-white dark:bg-zinc-800 border border-border flex items-center justify-center shadow-lg transform -rotate-12 group-hover:rotate-0 transition-transform">
+                                                <div className="absolute -top-2 -left-2 w-10 h-10 rounded-2xl bg-card border border-border flex items-center justify-center shadow-lg transform -rotate-12 group-hover:rotate-0 transition-transform">
                                                     <span className="font-black text-lg text-foreground">#{index + 1}</span>
                                                 </div>
                                                 {index === 0 && (
