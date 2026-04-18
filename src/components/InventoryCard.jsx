@@ -101,7 +101,7 @@ export default function InventoryCard({ item, onEdit, onDelete, t, viewMode = 'g
                                     // Optionally: openCart(); if you want to force drawer open
                                 }}
                                 className="p-2 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-white transition-colors shadow-sm"
-                                title="Add to Cart"
+                                title={safeT.addToCart || "Add to Cart"}
                             >
                                 <ShoppingCart size={18} />
                             </motion.button>
@@ -228,7 +228,7 @@ export default function InventoryCard({ item, onEdit, onDelete, t, viewMode = 'g
                                         handleAddToCart(e);
                                     }}
                                     className="bg-primary/10 text-primary p-2 rounded-full hover:scale-105 hover:bg-primary hover:text-white shrink-0 transition-all mb-0.5"
-                                    title="Add to Cart"
+                                    title={safeT.addToCart || "Add to Cart"}
                                 >
                                     <ShoppingCart size={14} strokeWidth={2.5} />
                                 </motion.button>

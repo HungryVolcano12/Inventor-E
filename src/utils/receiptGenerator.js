@@ -12,8 +12,9 @@ export const generateReceipt = async ({ items, subtotal, discount, tax, total, t
         format: 'a5'
     });
 
-    const { receiptLogo, receiptAddress, receiptFooter, color: appColor } = useSettingsStore.getState();
+    const { receiptLogo, receiptAddress, receiptFooter, color: appColor, language } = useSettingsStore.getState();
     const { storeName: storeNameFromAuth } = (await import('../store/useAuthStore')).useAuthStore.getState();
+    const t = (await import('./translations')).translations[language];
 
     const colors = {
         pink: [255, 20, 147],
@@ -65,9 +66,9 @@ export const generateReceipt = async ({ items, subtotal, discount, tax, total, t
     doc.setTextColor(80, 80, 80);
     doc.setFontSize(9);
     const date = new Date();
-    doc.text(`Date: ${date.toLocaleDateString()} ${date.toLocaleTimeString()}`, 14, currentY);
+    doc.text(`${t.dateLabel || 'Date:'} ${date.toLocaleDateString()} ${date.toLocaleTimeString()}`, 14, currentY);
     currentY += 6;
-    doc.text(`Receipt #: ${transactionId || Math.random().toString(36).substring(2, 9).toUpperCase()}`, 14, currentY);
+    doc.text(`${t.receiptNumber || 'Receipt #:'} ${transactionId || Math.random().toString(36).substring(2, 9).toUpperCase()}`, 14, currentY);
 
     // Items Header
     currentY += 6;
@@ -85,7 +86,7 @@ export const generateReceipt = async ({ items, subtotal, discount, tax, total, t
     // Render Table
     autoTable(doc, {
         startY: currentY,
-        head: [['Item', 'Qty x Price', 'Amount']],
+        head: [[t.itemLabel || 'Item', t.qtyPriceLabel || 'Qty x Price', t.amountLabel || 'Amount']],
         body: tableData,
         theme: 'plain',
         headStyles: { fontStyle: 'bold', textColor: 0, fontSize: 9 },
@@ -106,7 +107,7 @@ export const generateReceipt = async ({ items, subtotal, discount, tax, total, t
     // Totals Section
     doc.setFontSize(10);
     doc.setTextColor(60, 60, 60);
-    doc.text("Subtotal:", pageWidth - 55, finalY);
+    doc.text(t.subtotalLabel || "Subtotal:", pageWidth - 55, finalY);
     doc.setTextColor(0, 0, 0);
     doc.text(formatCurrency(subtotal), pageWidth - 14, finalY, { align: 'right' });
 
@@ -115,7 +116,7 @@ export const generateReceipt = async ({ items, subtotal, discount, tax, total, t
     if (discount > 0) {
         currentY += 6;
         doc.setTextColor(60, 60, 60);
-        doc.text("Discount:", pageWidth - 55, currentY);
+        doc.text(t.discountLabel || "Discount:", pageWidth - 55, currentY);
         doc.setTextColor(239, 68, 68);
         doc.text(`-${formatCurrency(discount)}`, pageWidth - 14, currentY, { align: 'right' });
     }
@@ -123,7 +124,7 @@ export const generateReceipt = async ({ items, subtotal, discount, tax, total, t
     if (tax > 0) {
         currentY += 6;
         doc.setTextColor(60, 60, 60);
-        doc.text("Tax:", pageWidth - 55, currentY);
+        doc.text(t.taxLabel || "Tax:", pageWidth - 55, currentY);
         doc.setTextColor(0, 0, 0);
         doc.text(`+${formatCurrency(tax)}`, pageWidth - 14, currentY, { align: 'right' });
     }
@@ -137,7 +138,7 @@ export const generateReceipt = async ({ items, subtotal, discount, tax, total, t
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(255, 255, 255);
-    doc.text("TOTAL:", 18, currentY + 1);
+    doc.text(t.totalLabel || "TOTAL:", 18, currentY + 1);
     doc.text(formatCurrency(total), pageWidth - 18, currentY + 1, { align: 'right' });
 
     // Footer
@@ -145,7 +146,7 @@ export const generateReceipt = async ({ items, subtotal, discount, tax, total, t
     doc.setFontSize(9);
     doc.setFont("helvetica", "italic");
     doc.setTextColor(150, 150, 150);
-    const footerText = receiptFooter || "Thank you for your purchase!";
+    const footerText = receiptFooter || t.thankYouFooter || "Thank you for your purchase!";
     const splitFooter = doc.splitTextToSize(footerText, pageWidth - 20);
     doc.text(splitFooter, pageWidth / 2, currentY, { align: 'center' });
 

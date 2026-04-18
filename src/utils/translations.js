@@ -167,7 +167,59 @@ export const translations = {
         deadStockInfo: 'Items taking up space with zero movement recently.',
         lowStockAlertBody: 'has dropped to',
         units: 'units',
-        requestPermission: 'Request Permission'
+        requestPermission: 'Request Permission',
+
+        // Shift Modal & Register
+        openRegister: 'Open Register',
+        closeRegister: 'Close Register',
+        startingCashAmount: 'Starting Cash Amount',
+        actualCashCounted: 'Actual Cash Counted',
+        expectedCashInDrawer: 'Expected Cash in Drawer',
+        starting: 'Starting',
+        cashSales: 'Cash Sales',
+        shortBy: 'Short by',
+        overBy: 'Over by',
+        startShift: 'Start Shift',
+        endShiftViewReport: 'End Shift & View Report',
+        shiftClosed: 'Shift Closed',
+        transactionsLabel: 'Transactions',
+        totalRevenue: 'Total Revenue',
+        paymentBreakdown: 'Payment Breakdown',
+        cashReconciliation: 'Cash Reconciliation',
+        expectedInDrawer: 'Expected in Drawer',
+        actualCounted: 'Actual Counted',
+        short: 'Short',
+        over: 'Over',
+        pdfReport: 'PDF Report',
+        whatsapp: 'WhatsApp',
+
+        // Receipts & PDF
+        dateLabel: 'Date:',
+        receiptNumber: 'Receipt #:',
+        itemLabel: 'Item',
+        qtyPriceLabel: 'Qty x Price',
+        amountLabel: 'Amount',
+        subtotalLabel: 'Subtotal:',
+        discountLabel: 'Discount:',
+        taxLabel: 'Tax:',
+        totalLabel: 'TOTAL:',
+        thankYouFooter: 'Thank you for your purchase!',
+        salesSummary: 'Sales Summary',
+        totalTransactions: 'Total Transactions',
+        refunds: 'Refunds',
+        netRevenue: 'Net Revenue',
+        paymentMethods: 'Payment Methods',
+
+        // General inventory UI
+        allCategory: 'All',
+        switchToListView: 'Switch to List View',
+        switchToGridView: 'Switch to Grid View',
+        addToCart: 'Add to Cart',
+
+        // Pro Action
+        proActionsTitle: 'Pro Actions',
+        refundsReturnsTitle: 'Refunds & Returns',
+        refundsReturnsDesc: 'Process customer returns and restock items'
     },
     id: {
         dashboard: 'Dasbor',
@@ -337,6 +389,58 @@ export const translations = {
         deadStockInfo: 'Barang yang memenuhi ruang tanpa pergerakan akhir-akhir ini.',
         lowStockAlertBody: 'telah turun ke',
         units: 'unit',
-        requestPermission: 'Minta Izin'
+        requestPermission: 'Minta Izin',
+
+        // Shift Modal & Register
+        openRegister: 'Buka Kasir',
+        closeRegister: 'Tutup Kasir',
+        startingCashAmount: 'Uang Modal Awal',
+        actualCashCounted: 'Uang Fisik Dihitung',
+        expectedCashInDrawer: 'Uang Diharapkan di Laci',
+        starting: 'Awal',
+        cashSales: 'Penjualan Tunai',
+        shortBy: 'Kurang',
+        overBy: 'Lebih',
+        startShift: 'Mulai Sesi',
+        endShiftViewReport: 'Akhiri Sesi & Lihat Laporan',
+        shiftClosed: 'Sesi Kasir Ditutup',
+        transactionsLabel: 'Transaksi',
+        totalRevenue: 'Total Pendapatan',
+        paymentBreakdown: 'Rincian Pembayaran',
+        cashReconciliation: 'Rekonsiliasi Kas',
+        expectedInDrawer: 'Uang Diharapkan',
+        actualCounted: 'Aktual Dihitung',
+        short: 'Kurang',
+        over: 'Lebih',
+        pdfReport: 'Cetak PDF',
+        whatsapp: 'WhatsApp',
+
+        // Receipts & PDF
+        dateLabel: 'Tanggal:',
+        receiptNumber: 'No. Struk:',
+        itemLabel: 'Barang',
+        qtyPriceLabel: 'Jml x Harga',
+        amountLabel: 'Jumlah',
+        subtotalLabel: 'Subtotal:',
+        discountLabel: 'Diskon:',
+        taxLabel: 'Pajak:',
+        totalLabel: 'TOTAL:',
+        thankYouFooter: 'Terima kasih atas kunjungan Anda!',
+        salesSummary: 'Ringkasan Penjualan',
+        totalTransactions: 'Total Transaksi',
+        refunds: 'Pengembalian Dana',
+        netRevenue: 'Pendapatan Bersih',
+        paymentMethods: 'Metode Pembayaran',
+
+        // General inventory UI
+        allCategory: 'Semua',
+        switchToListView: 'Alihkan ke Tampilan Daftar',
+        switchToGridView: 'Alihkan ke Tampilan Kotak',
+        addToCart: 'Tambah ke Keranjang',
+
+        // Pro Action
+        proActionsTitle: 'Aksi Pro',
+        refundsReturnsTitle: 'Pengembalian Dana & Barang',
+        refundsReturnsDesc: 'Proses pengembalian pelanggan dan jadikan stok kembali'
     }
 };

@@ -125,7 +125,7 @@ export default function Dashboard() {
 
             {isPro && (
                 <div className="mt-8">
-                    <h3 className="font-bold text-lg mb-4 text-foreground">Pro Actions</h3>
+                    <h3 className="font-bold text-lg mb-4 text-foreground">{t.proActionsTitle || 'Pro Actions'}</h3>
                     <motion.button
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -137,8 +137,8 @@ export default function Dashboard() {
                                 <RotateCcw size={24} />
                             </div>
                             <div className="text-left">
-                                <h4 className="font-bold text-foreground">Refunds & Returns</h4>
-                                <p className="text-xs text-muted-foreground">Process customer returns and restock items</p>
+                                <h4 className="font-bold text-foreground">{t.refundsReturnsTitle || 'Refunds & Returns'}</h4>
+                                <p className="text-xs text-muted-foreground">{t.refundsReturnsDesc || 'Process customer returns and restock items'}</p>
                             </div>
                         </div>
                         <ChevronRight size={20} className="text-muted-foreground group-hover:translate-x-1 transition-transform" />

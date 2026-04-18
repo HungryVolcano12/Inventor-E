@@ -101,17 +101,17 @@ export default function ShiftModal({ isOpen, mode = 'open', onClose }) {
                         <div className="space-y-5">
                             <div className="flex items-center gap-3 text-primary">
                                 <TrendingUp size={28} />
-                                <h2 className="text-2xl font-bold text-foreground">Shift Closed</h2>
+                                <h2 className="text-2xl font-bold text-foreground">{t.shiftClosed}</h2>
                             </div>
 
                             {/* Summary stats */}
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="bg-muted rounded-xl p-4">
-                                    <p className="text-xs text-muted-foreground mb-1">Transactions</p>
+                                    <p className="text-xs text-muted-foreground mb-1">{t.transactionsLabel}</p>
                                     <p className="text-2xl font-bold text-foreground">{saleTxs.length}</p>
                                 </div>
                                 <div className="bg-muted rounded-xl p-4">
-                                    <p className="text-xs text-muted-foreground mb-1">Total Revenue</p>
+                                    <p className="text-xs text-muted-foreground mb-1">{t.totalRevenue}</p>
                                     <p className="text-2xl font-bold text-foreground">{formatCurrency(totalRevenue)}</p>
                                 </div>
                             </div>
@@ -119,7 +119,7 @@ export default function ShiftModal({ isOpen, mode = 'open', onClose }) {
                             {/* Payment breakdown */}
                             {Object.keys(byMethod).length > 0 && (
                                 <div className="bg-muted rounded-xl p-4 space-y-2">
-                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Payment Breakdown</p>
+                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t.paymentBreakdown}</p>
                                     {Object.entries(byMethod).map(([m, v]) => (
                                         <div key={m} className="flex justify-between text-sm">
                                             <span className="text-foreground">{m}</span>
@@ -131,10 +131,10 @@ export default function ShiftModal({ isOpen, mode = 'open', onClose }) {
 
                             {/* Cash reconciliation */}
                             <div className="bg-muted rounded-xl p-4 space-y-2">
-                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Cash Reconciliation</p>
+                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t.cashReconciliation}</p>
                                 {[
-                                    ['Expected in Drawer', formatCurrency(startingCash + expectedCash)],
-                                    ['Actual Counted',     formatCurrency(Number(closedShift.actual_cash || 0))],
+                                    [t.expectedInDrawer, formatCurrency(startingCash + expectedCash)],
+                                    [t.actualCounted,     formatCurrency(Number(closedShift.actual_cash || 0))],
                                 ].map(([l, v]) => (
                                     <div key={l} className="flex justify-between text-sm">
                                         <span className="text-muted-foreground">{l}</span>
@@ -145,7 +145,7 @@ export default function ShiftModal({ isOpen, mode = 'open', onClose }) {
                                     const diff = Number(closedShift.actual_cash || 0) - (startingCash + expectedCash);
                                     return (
                                         <div className={`flex justify-between text-sm font-bold pt-1 border-t border-border ${diff >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                                            <span>{diff >= 0 ? 'Over' : 'Short'}</span>
+                                            <span>{diff >= 0 ? t.over : t.short}</span>
                                             <span>{diff >= 0 ? '+' : ''}{formatCurrency(Math.abs(diff))}</span>
                                         </div>
                                     );
@@ -159,21 +159,21 @@ export default function ShiftModal({ isOpen, mode = 'open', onClose }) {
                                     className="flex items-center justify-center gap-2 bg-muted hover:bg-muted/80 text-foreground font-semibold py-3 rounded-xl transition-all border border-border"
                                 >
                                     <FileText size={18} />
-                                    PDF Report
+                                    {t.pdfReport}
                                 </button>
                                 <button
                                     onClick={handleWhatsApp}
                                     className="flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 rounded-xl transition-all"
                                 >
                                     <MessageSquare size={18} />
-                                    WhatsApp
+                                    {t.whatsapp}
                                 </button>
                             </div>
                             <button
                                 onClick={handleDone}
                                 className="w-full font-bold py-3 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all"
                             >
-                                Done
+                                {t.done}
                             </button>
                         </div>
                     ) : (
@@ -183,7 +183,7 @@ export default function ShiftModal({ isOpen, mode = 'open', onClose }) {
                                 <div className="flex items-center gap-3 text-primary">
                                     {mode === 'open' ? <Unlock size={28} /> : <Lock size={28} />}
                                     <h2 className="text-2xl font-bold text-foreground">
-                                        {mode === 'open' ? 'Open Register' : 'Close Register'}
+                                        {mode === 'open' ? t.openRegister : t.closeRegister}
                                     </h2>
                                 </div>
                                 {mode === 'close' && onClose && (
@@ -196,10 +196,10 @@ export default function ShiftModal({ isOpen, mode = 'open', onClose }) {
                             {mode === 'close' && currentShift && (
                                 <div className="mb-4 space-y-3">
                                     <div className="p-4 bg-muted rounded-xl border border-border">
-                                        <h3 className="text-sm font-semibold text-muted-foreground mb-1">Expected Cash in Drawer</h3>
+                                        <h3 className="text-sm font-semibold text-muted-foreground mb-1">{t.expectedCashInDrawer}</h3>
                                         <p className="text-3xl font-bold text-foreground">{formatCurrency(expectedTotal)}</p>
                                         <p className="text-xs text-muted-foreground mt-1">
-                                            Starting {formatCurrency(startingCash)} + Cash Sales {formatCurrency(expectedCash)}
+                                            {t.starting} {formatCurrency(startingCash)} + {t.cashSales} {formatCurrency(expectedCash)}
                                         </p>
                                     </div>
                                     {/* Live over/short indicator */}
@@ -210,7 +210,7 @@ export default function ShiftModal({ isOpen, mode = 'open', onClose }) {
                                                 : 'bg-red-500/10 border-red-500/30 text-red-600'
                                         }`}>
                                             <AlertCircle size={16} />
-                                            {overShort >= 0 ? 'Over' : 'Short'} by {formatCurrency(Math.abs(overShort))}
+                                            {overShort >= 0 ? t.overBy : t.shortBy} {formatCurrency(Math.abs(overShort))}
                                         </div>
                                     )}
                                 </div>
@@ -219,7 +219,7 @@ export default function ShiftModal({ isOpen, mode = 'open', onClose }) {
                             <form onSubmit={handleSubmit} className="space-y-6">
                                 <div>
                                     <label className="block text-sm font-medium text-foreground mb-2">
-                                        {mode === 'open' ? 'Starting Cash Amount' : 'Actual Cash Counted'}
+                                        {mode === 'open' ? t.startingCashAmount : t.actualCashCounted}
                                     </label>
                                     <div className="relative">
                                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted-foreground">
@@ -249,7 +249,7 @@ export default function ShiftModal({ isOpen, mode = 'open', onClose }) {
                                     ) : (
                                         <>
                                             {mode === 'open' ? <Unlock size={20} /> : <Lock size={20} />}
-                                            {mode === 'open' ? 'Start Shift' : 'End Shift & View Report'}
+                                            {mode === 'open' ? t.startShift : t.endShiftViewReport}
                                         </>
                                     )}
                                 </button>

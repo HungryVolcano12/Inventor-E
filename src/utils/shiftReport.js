@@ -11,7 +11,8 @@ import { useSettingsStore } from '../store/useSettingsStore';
  */
 export const generateShiftReport = async (shift, transactions = []) => {
     const { storeName } = useAuthStore.getState();
-    const { receiptLogo, receiptAddress, receiptFooter, color: appColor } = useSettingsStore.getState();
+    const { receiptLogo, receiptAddress, receiptFooter, color: appColor, language } = useSettingsStore.getState();
+    const t = (await import('./translations')).translations[language];
 
     const colors = {
         pink: [255, 20, 147],
@@ -70,7 +71,7 @@ export const generateShiftReport = async (shift, transactions = []) => {
     doc.setFontSize(13);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(255, 255, 255); // White text on colored background
-    doc.text('END OF SHIFT REPORT', pageWidth / 2, currentY + 1.5, { align: 'center' });
+    doc.text(t.shiftClosed?.toUpperCase() || 'END OF SHIFT REPORT', pageWidth / 2, currentY + 1.5, { align: 'center' });
     
     currentY += 10;
 
@@ -121,14 +122,14 @@ export const generateShiftReport = async (shift, transactions = []) => {
 
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.text('Sales Summary', 12, y);
+    doc.text(t.salesSummary || 'Sales Summary', 12, y);
     y += 6;
 
     const summaryRows = [
-        ['Total Transactions', saleTxs.length.toString()],
-        ['Total Revenue', formatCurrency(totalRevenue)],
-        ['Refunds', refundTxs.length > 0 ? `-${formatCurrency(totalRefunds)}` : '—'],
-        ['Net Revenue', formatCurrency(netRevenue)],
+        [t.totalTransactions || 'Total Transactions', saleTxs.length.toString()],
+        [t.totalRevenue || 'Total Revenue', formatCurrency(totalRevenue)],
+        [t.refunds || 'Refunds', refundTxs.length > 0 ? `-${formatCurrency(totalRefunds)}` : '—'],
+        [t.netRevenue || 'Net Revenue', formatCurrency(netRevenue)],
     ];
 
     autoTable(doc, {
@@ -150,12 +151,12 @@ export const generateShiftReport = async (shift, transactions = []) => {
         doc.setFontSize(11);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(30, 30, 30);
-        doc.text('Payment Breakdown', 14, y);
+        doc.text(t.paymentBreakdown || 'Payment Breakdown', 14, y);
         y += 4;
 
         autoTable(doc, {
             startY: y,
-            head: [['Method', 'Amount']],
+            head: [['Method', t.amountLabel || 'Amount']],
             body: Object.entries(byMethod).map(([m, v]) => [m, formatCurrency(v)]),
             theme: 'grid',
             headStyles: { fontStyle: 'bold', fontSize: 9, textColor: 0, fillColor: [240, 240, 245], lineColor: 255 },
@@ -179,17 +180,17 @@ export const generateShiftReport = async (shift, transactions = []) => {
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(30, 30, 30);
-    doc.text('Cash Reconciliation', 14, y);
+    doc.text(t.cashReconciliation || 'Cash Reconciliation', 14, y);
     y += 4;
 
     autoTable(doc, {
         startY: y,
         body: [
-            ['Starting Cash', formatCurrency(startingCash)],
-            ['+ Cash Sales', formatCurrency(expectedCash)],
-            ['Expected in Drawer', formatCurrency(expectedTotal)],
-            ['Actual Cash Counted', formatCurrency(actualCash)],
-            [overShort >= 0 ? 'Over' : 'Short', `${overShort >= 0 ? '+' : ''}${formatCurrency(Math.abs(overShort))}`],
+            [t.startingCashAmount || 'Starting Cash', formatCurrency(startingCash)],
+            [`+ ${t.cashSales || 'Cash Sales'}`, formatCurrency(expectedCash)],
+            [t.expectedInDrawer || 'Expected in Drawer', formatCurrency(expectedTotal)],
+            [t.actualCounted || 'Actual Cash Counted', formatCurrency(actualCash)],
+            [overShort >= 0 ? (t.over || 'Over') : (t.short || 'Short'), `${overShort >= 0 ? '+' : ''}${formatCurrency(Math.abs(overShort))}`],
         ],
         theme: 'grid',
         bodyStyles: { fontSize: 9, textColor: 60, lineColor: 255 },

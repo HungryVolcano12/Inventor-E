@@ -173,7 +173,7 @@ export default function Inventory({ mode = 'manage' }) {
                                 <button
                                     onClick={() => navigate('/refunds')}
                                     className="p-2 hover:bg-orange-500/10 text-orange-600 rounded-full transition-all shrink-0"
-                                    title="Refunds"
+                                    title={t.refunds}
                                 >
                                     <RotateCcw size={18} strokeWidth={2.5} />
                                 </button>
@@ -183,9 +183,9 @@ export default function Inventory({ mode = 'manage' }) {
                                 <button
                                     onClick={() => setIsShiftModalOpen(true)}
                                     className="px-3 py-1.5 rounded-full border border-red-200 bg-red-50 text-red-600 text-sm font-bold hover:shadow-sm transition-all active:scale-90 shrink-0"
-                                    title="Close Register"
+                                    title={t.closeRegister}
                                 >
-                                    Close Register
+                                    {t.closeRegister}
                                 </button>
                             )}
 
@@ -226,7 +226,7 @@ export default function Inventory({ mode = 'manage' }) {
                             <button
                                 onClick={() => setViewMode(prev => prev === 'grid' ? 'list' : 'grid')}
                                 className="p-1.5 sm:p-2 rounded-full border border-border hover:shadow-md transition-all active:scale-90 text-muted-foreground hover:text-foreground shrink-0 hidden sm:block"
-                                title={viewMode === 'grid' ? "Switch to List View" : "Switch to Grid View"}
+                                title={viewMode === 'grid' ? t.switchToListView : t.switchToGridView}
                             >
                                 {viewMode === 'grid' ? <ListIcon size={16} /> : <LayoutGrid size={16} />}
                             </button>
@@ -246,7 +246,7 @@ export default function Inventory({ mode = 'manage' }) {
                                     : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-transparent dark:hover:bg-gray-700'
                                     }`}
                             >
-                                {cat}
+                                {cat === 'All' ? t.allCategory : cat}
                             </button>
                         ))}
                         <button
