@@ -223,7 +223,7 @@ export default function ShiftModal({ isOpen, mode = 'open', onClose }) {
                                     </label>
                                     <div className="relative">
                                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted-foreground">
-                                            <DollarSign size={20} />
+                                            <span className="font-bold text-sm tracking-wide">IDR</span>
                                         </div>
                                         <input
                                             type="number"
@@ -232,7 +232,7 @@ export default function ShiftModal({ isOpen, mode = 'open', onClose }) {
                                             step="1000"
                                             value={amount}
                                             onChange={(e) => setAmount(e.target.value)}
-                                            className="w-full pl-11 pr-4 py-4 rounded-xl border border-border bg-transparent outline-none focus:border-primary text-xl font-medium text-foreground transition-all"
+                                            className="w-full pl-14 pr-4 py-4 rounded-xl border border-border bg-transparent outline-none focus:border-primary text-xl font-medium text-foreground transition-all"
                                             placeholder="0"
                                         />
                                     </div>
