@@ -185,9 +185,14 @@ export default function Auth() {
                 </form>
             </motion.div>
 
-            <p className="text-xs text-muted-foreground/50 mt-8 text-center">
-                Inventor-E · {new Date().getFullYear()}
-            </p>
+            <div className="text-xs text-muted-foreground/50 mt-8 text-center space-y-2">
+                <div className="flex justify-center gap-4">
+                    <a href="/terms" className="hover:text-foreground transition-colors">Terms & Conditions</a>
+                    <span>·</span>
+                    <a href="/refunds" className="hover:text-foreground transition-colors">Refund Policy</a>
+                </div>
+                <p>Inventor-E · {new Date().getFullYear()}</p>
+            </div>
         </div>
     );
 }

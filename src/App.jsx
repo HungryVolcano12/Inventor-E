@@ -13,6 +13,8 @@ import Auth from './pages/Auth';
 import JoinStore from './pages/JoinStore';
 import Customers from './pages/Customers';
 import Suppliers from './pages/Suppliers';
+import Terms from './pages/Terms';
+import RefundPolicy from './pages/RefundPolicy';
 import { useSettingsStore } from './store/useSettingsStore';
 import { useAuthStore } from './store/useAuthStore';
 import { useInventoryStore } from './store/useInventoryStore';
@@ -81,6 +83,8 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/join" element={<JoinStore />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/refunds" element={<RefundPolicy />} />
           <Route path="*" element={<Auth />} />
         </Routes>
       </BrowserRouter>
@@ -103,6 +107,8 @@ function App() {
           <Route path="profile" element={<Settings />} />
           <Route path="team" element={<TeamManagement />} />
         </Route>
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/refunds" element={<RefundPolicy />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
