@@ -45,15 +45,26 @@ export default function Inventory({ mode = 'manage' }) {
     const [selectedItems, setSelectedItems] = useState(new Set());
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+    // Category Modal State
+    const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
+    const [newCategoryName, setNewCategoryName] = useState('');
+
     // Categories derived from items + custom categories + 'All'
     const categories = ['All', ...new Set([...items.map(i => i.category), ...(customCategories || [])])];
 
     const handleAddCategory = () => {
-        const newCategory = prompt(language === 'en' ? "Enter new category name:" : "Masukkan nama kategori baru:");
-        if (newCategory) {
-            addCategory(newCategory);
-            setActiveCategory(newCategory);
+        setNewCategoryName('');
+        setIsAddCategoryModalOpen(true);
+    };
+
+    const confirmAddCategory = (e) => {
+        e.preventDefault();
+        const trimmed = newCategoryName.trim();
+        if (trimmed) {
+            addCategory(trimmed);
+            setActiveCategory(trimmed);
         }
+        setIsAddCategoryModalOpen(false);
     };
 
     const toggleSelectionMode = () => {
@@ -357,6 +368,55 @@ export default function Inventory({ mode = 'manage' }) {
                                     {t.deleteSelected}
                                 </button>
                             </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Add Category Modal */}
+            <AnimatePresence>
+                {isAddCategoryModalOpen && (
+                    <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-card p-6 rounded-3xl w-full max-w-sm shadow-xl"
+                        >
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-xl font-bold text-foreground">
+                                    {language === 'en' ? 'New Category' : 'Kategori Baru'}
+                                </h3>
+                                <button
+                                    onClick={() => setIsAddCategoryModalOpen(false)}
+                                    className="p-2 bg-muted rounded-full text-muted-foreground hover:text-foreground transition-colors"
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+                            
+                            <form onSubmit={confirmAddCategory}>
+                                <div className="mb-6">
+                                    <label className="block text-sm font-medium text-muted-foreground mb-2">
+                                        {language === 'en' ? 'Category Name' : 'Nama Kategori'}
+                                    </label>
+                                    <input
+                                        type="text"
+                                        autoFocus
+                                        required
+                                        value={newCategoryName}
+                                        onChange={(e) => setNewCategoryName(e.target.value)}
+                                        placeholder={language === 'en' ? 'e.g. Beverages' : 'contoh: Minuman'}
+                                        className="w-full p-3 rounded-xl border border-border bg-transparent focus:border-primary text-foreground outline-none transition-all"
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    className="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-primary/90 transition-colors"
+                                >
+                                    {language === 'en' ? 'Save Category' : 'Simpan Kategori'}
+                                </button>
+                            </form>
                         </motion.div>
                     </div>
                 )}
