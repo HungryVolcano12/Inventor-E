@@ -10,11 +10,12 @@ import ShiftModal from '../components/ShiftModal';
 import InventoryCard from '../components/InventoryCard';
 import AddItemCard from '../components/AddItemCard';
 import SortFilterMenu from '../components/SortFilterMenu';
-import { Search, LayoutGrid, List as ListIcon, Plus, CheckSquare, Trash2, X, Settings2, ShoppingCart, Upload, Download, RotateCcw } from 'lucide-react';
+import { Search, LayoutGrid, List as ListIcon, Plus, CheckSquare, Trash2, X, Settings2, ShoppingCart, Upload, Download, RotateCcw, FileText } from 'lucide-react';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
+import { exportInventoryToPDF } from '../utils/exportData';
 
 export default function Inventory({ mode = 'manage' }) {
     const navigate = useNavigate();
@@ -106,6 +107,14 @@ export default function Inventory({ mode = 'manage' }) {
         XLSX.writeFile(workbook, `Inventory_${new Date().toISOString().split('T')[0]}.xlsx`);
         
         toast.success(language === 'en' ? 'Inventory exported successfully' : 'Inventaris berhasil diekspor');
+    };
+
+    const handleExportPDF = async () => {
+        try {
+            await exportInventoryToPDF(items, language);
+        } catch {
+            toast.error(language === 'en' ? 'Failed to export PDF' : 'Gagal mengekspor PDF');
+        }
     };
 
     const handleFileUpload = (e) => {
@@ -210,6 +219,14 @@ export default function Inventory({ mode = 'manage' }) {
                                                 title={language === 'en' ? 'Export CSV' : 'Ekspor CSV'}
                                             >
                                                 <Download size={16} />
+                                            </button>
+
+                                            <button
+                                                onClick={handleExportPDF}
+                                                className="p-1.5 sm:p-2 rounded-full border border-border hover:shadow-md transition-all active:scale-90 shrink-0 text-muted-foreground hover:text-foreground hidden sm:block"
+                                                title={language === 'en' ? 'Share PDF' : 'Bagikan PDF'}
+                                            >
+                                                <FileText size={16} />
                                             </button>
                                             
                                             <label

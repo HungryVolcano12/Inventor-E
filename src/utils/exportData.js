@@ -304,3 +304,79 @@ export const exportToCSVForAccounting = (transactions) => {
     link.click();
     document.body.removeChild(link);
 };
+
+export const exportInventoryToPDF = async (items, language = 'en') => {
+    try {
+        const JsPDF = jsPDF.jsPDF || jsPDF;
+        const doc = new JsPDF();
+
+        const uncategorizedLabel = language === 'en' ? 'Uncategorized' : 'Tidak Berkategori';
+
+        // Group items by category
+        const itemsByCategory = items.reduce((acc, item) => {
+            const cat = item.category || uncategorizedLabel;
+            if (!acc[cat]) acc[cat] = [];
+            acc[cat].push(item);
+            return acc;
+        }, {});
+
+        const categories = Object.keys(itemsByCategory).sort();
+
+        categories.forEach((category, index) => {
+            if (index > 0) {
+                doc.addPage();
+            }
+
+            doc.setFontSize(18);
+            doc.text(language === 'en' ? 'Inventory Report' : 'Laporan Inventaris', 14, 22);
+
+            doc.setFontSize(10);
+            doc.text(`Generated on: ${new Date().toLocaleString(language === 'en' ? 'en-US' : 'id-ID')}`, 14, 30);
+            
+            doc.setFontSize(14);
+            doc.text(`${language === 'en' ? 'Category' : 'Kategori'}: ${category}`, 14, 42);
+
+            const headers = [language === 'en' ? ['Name', 'Price', 'Stock'] : ['Nama', 'Harga Jual', 'Stok']];
+
+            const body = itemsByCategory[category].map(item => [
+                item.name,
+                formatCurrency(item.price),
+                item.stock
+            ]);
+
+            autoTable(doc, {
+                head: headers,
+                body: body,
+                startY: 48,
+                theme: 'grid',
+                styles: { fontSize: 9 },
+                headStyles: { fillColor: [236, 72, 153] }
+            });
+        });
+
+        const filename = `Inventory_${new Date().toISOString().split('T')[0]}.pdf`;
+        
+        // Try native share first
+        if (navigator.share && navigator.canShare) {
+            const blob = doc.output('blob');
+            const file = new File([blob], filename, { type: 'application/pdf' });
+            if (navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        title: language === 'en' ? 'Inventory Report' : 'Laporan Inventaris',
+                        files: [file]
+                    });
+                    // Intentionally not returning here so it also downloads
+                } catch (shareErr) {
+                    console.log('Share canceled or failed', shareErr);
+                }
+            }
+        }
+        
+        // Always download the file
+        doc.save(filename);
+    } catch (err) {
+        console.error('Error generating PDF:', err);
+        throw err;
+    }
+};
